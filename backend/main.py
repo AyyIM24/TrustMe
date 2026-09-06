@@ -19,11 +19,20 @@ from routers import (
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Load ML models and verify database on startup."""
+    # Initialize and verify MySQL database tables
+    try:
+        from database import engine, Base
+        import models  # Ensures all models (User, UserFace, Analysis, Feedback, TrendingTopic, BulkJob) are registered
+        Base.metadata.create_all(bind=engine)
+        print("[Database] MySQL database tables verified and synchronized [OK]")
+    except Exception as e:
+        print(f"[Database] Warning: Could not auto-sync tables on startup: {e}")
+
     from services.model_service import ModelService
     app.state.model_service = ModelService()
-    print("[HealthGuard AI] Deep ML models loaded successfully")
+    print("[TrustMe AI] Deep ML models loaded successfully")
     yield
-    print("[HealthGuard AI] Shutting down cleanly")
+    print("[TrustMe AI] Shutting down cleanly")
 
 
 app = FastAPI(

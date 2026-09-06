@@ -2,9 +2,13 @@ from pydantic_settings import BaseSettings
 from typing import List
 
 
+import os
+
+ENV_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+
 class Settings(BaseSettings):
-    DATABASE_URL: str = "mysql+pymysql://root:@localhost:3306/fakeshield"
-    SECRET_KEY: str = "fakeshield-super-secret-key-change-in-production-2024"
+    DATABASE_URL: str = "mysql+pymysql://root:@localhost:3306/trustme_db"
+    SECRET_KEY: str = "trustme-super-secret-key-change-in-production-2026"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
@@ -17,7 +21,8 @@ class Settings(BaseSettings):
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
 
     class Config:
-        env_file = ".env"
+        env_file = ENV_PATH
+        extra = "ignore"
 
 
 settings = Settings()
