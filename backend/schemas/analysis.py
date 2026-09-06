@@ -58,7 +58,7 @@ class AnalyzeResponse(BaseModel):
     credibility_signals: Optional[List[CredibilitySignal]] = None
     tags: Optional[List[str]] = []
     explanations: Optional[List[FeatureExplanation]] = []
-    predictions_comparison: Optional[List[ModelPredictionComparison]] = []
+    predictions_comparison: Optional[List[ModelPredictionComparison]] = None
 
 
 class AnalysisHistoryItem(BaseModel):

@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, AlertTriangle, CheckCircle, Loader2, ArrowRight, RotateCcw, Sparkles } from 'lucide-react'
-import { predictNews } from '../api'
+import { predictNews, getMetrics } from '../api'
 import TrustMePulseBadge from '../components/common/TrustMePulseBadge'
 
 const sampleTexts = [
@@ -22,9 +22,20 @@ const sampleTexts = [
 export default function Predict() {
   const [text, setText] = useState('')
   const [model, setModel] = useState('baseline')
+  const [availableModels, setAvailableModels] = useState(['baseline'])
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+
+  useEffect(() => {
+    getMetrics()
+      .then((data) => {
+        if (data?.available_models && Array.isArray(data.available_models)) {
+          setAvailableModels(data.available_models)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const handlePredict = async () => {
     if (!text.trim()) return
@@ -55,17 +66,18 @@ export default function Predict() {
     setError(null)
   }
 
+  const isBertAvailable = availableModels.includes('bert')
+
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       {/* Header with TrustMe Pulse Icon */}
       <motion.div
-        className="text-center mb-8"
+        className="text-center mb-10"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="inline-flex items-center gap-3 px-4 py-2 bg-[#D6EBFC]/95 border border-pink-300 rounded-full text-xs font-mono text-pink-800 mb-4 shadow-sm hover:border-pink-400 hover:shadow-md transition-all">
-          <TrustMePulseBadge size="sm" showLabel={false} />
-          <span className="font-bold">TrustMe AI Clinical Veracity Scanner</span>
+        <div className="flex justify-center mb-2">
+          <TrustMePulseBadge size="md" pulseRate="2.2s" />
         </div>
         <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
           Verify <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-500">Health News & Claims</span>
@@ -115,19 +127,41 @@ export default function Predict() {
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono text-slate-700 uppercase tracking-wider font-bold">Model:</span>
             <div className="flex bg-[#C8E4FA] rounded-xl p-1 border border-pink-300 shadow-inner">
-              {['baseline', 'bert'].map((m) => (
+              <button
+                type="button"
+                onClick={() => setModel('baseline')}
+                className={`px-3.5 py-1.5 text-xs font-mono font-bold rounded-lg transition-all duration-300 ${
+                  model === 'baseline'
+                    ? 'bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-500 text-white shadow-sm shadow-cyan-500/20'
+                    : 'text-slate-600 hover:text-pink-800'
+                }`}
+              >
+                TF-IDF + LR (Live)
+              </button>
+
+              {isBertAvailable ? (
                 <button
-                  key={m}
-                  onClick={() => setModel(m)}
-                  className={`px-4 py-1.5 text-xs font-mono font-bold rounded-lg transition-all duration-300 ${
-                    model === m
+                  type="button"
+                  onClick={() => setModel('bert')}
+                  className={`px-3.5 py-1.5 text-xs font-mono font-bold rounded-lg transition-all duration-300 ${
+                    model === 'bert'
                       ? 'bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-500 text-white shadow-sm shadow-cyan-500/20'
                       : 'text-slate-600 hover:text-pink-800'
                   }`}
                 >
-                  {m === 'baseline' ? 'TF-IDF + LR' : 'DistilBERT'}
+                  DistilBERT
                 </button>
-              ))}
+              ) : (
+                <div
+                  title="Transformer model fine-tuning is currently in the deployment roadmap"
+                  className="px-3 py-1.5 text-xs font-mono font-bold rounded-lg text-slate-400 cursor-not-allowed flex items-center gap-1.5"
+                >
+                  <span>DistilBERT</span>
+                  <span className="text-[10px] px-1.5 py-0.5 bg-pink-100 border border-pink-200 text-pink-700 rounded-full font-sans font-bold">
+                    Coming Soon
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 

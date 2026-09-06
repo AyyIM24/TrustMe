@@ -3,15 +3,14 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models.user import User
 from models.analysis import Analysis
-from schemas.analysis import AnalyzeRequest, AnalyzeUrlRequest, AnalyzeResponse, KeywordItem
+from schemas.analysis import (
+    AnalyzeRequest, AnalyzeUrlRequest, AnalyzeResponse, KeywordItem,
+    FeatureExplanation, CredibilitySignal
+)
 from services.ml_service import predictor
 from services.url_scraper import scrape_article
 from services.auth_service import get_current_user
 from services.credibility_service import analyze_credibility, generate_tags
-from schemas.analysis import (
-    AnalyzeRequest, AnalyzeUrlRequest, AnalyzeResponse, KeywordItem,
-    FeatureExplanation, ModelPredictionComparison, CredibilitySignal
-)
 
 router = APIRouter(tags=["Analysis"])
 
@@ -37,7 +36,6 @@ async def analyze_text(
     credibility = analyze_credibility(payload.title or "", payload.text, payload.source_url)
     tags = generate_tags(payload.title or "", payload.text, result["prediction"], credibility["credibility_score"])
     explanations = predictor.explain_prediction(payload.text)
-    comparison = predictor.get_model_comparison(payload.text, result)
 
     # Save to database
     record = Analysis(
@@ -72,8 +70,7 @@ async def analyze_text(
         credibility_color=credibility["credibility_color"],
         credibility_signals=[CredibilitySignal(**s) for s in credibility["signals"]],
         tags=tags,
-        explanations=[FeatureExplanation(**ex) for ex in explanations],
-        predictions_comparison=[ModelPredictionComparison(**c) for c in comparison]
+        explanations=[FeatureExplanation(**ex) for ex in explanations]
     )
 
 
@@ -106,7 +103,6 @@ async def analyze_url(
     credibility = analyze_credibility(scraped.get("title") or "", scraped["text"], payload.url)
     tags = generate_tags(scraped.get("title") or "", scraped["text"], result["prediction"], credibility["credibility_score"])
     explanations = predictor.explain_prediction(scraped["text"])
-    comparison = predictor.get_model_comparison(scraped["text"], result)
 
     # Save to database
     record = Analysis(
@@ -141,8 +137,7 @@ async def analyze_url(
         credibility_color=credibility["credibility_color"],
         credibility_signals=[CredibilitySignal(**s) for s in credibility["signals"]],
         tags=tags,
-        explanations=[FeatureExplanation(**ex) for ex in explanations],
-        predictions_comparison=[ModelPredictionComparison(**c) for c in comparison]
+        explanations=[FeatureExplanation(**ex) for ex in explanations]
     )
 
 
@@ -164,12 +159,6 @@ async def get_analysis(
     credibility = analyze_credibility(record.title or "", record.input_text, record.source_url)
     tags = generate_tags(record.title or "", record.input_text, record.prediction, credibility["credibility_score"])
     explanations = predictor.explain_prediction(record.input_text)
-    
-    fast_prediction = {
-        "prediction": record.prediction,
-        "confidence": record.confidence
-    }
-    comparison = predictor.get_model_comparison(record.input_text, fast_prediction)
 
     return AnalyzeResponse(
         id=record.id,
@@ -188,6 +177,5 @@ async def get_analysis(
         credibility_color=credibility["credibility_color"],
         credibility_signals=[CredibilitySignal(**s) for s in credibility["signals"]],
         tags=tags,
-        explanations=[FeatureExplanation(**ex) for ex in explanations],
-        predictions_comparison=[ModelPredictionComparison(**c) for c in comparison]
+        explanations=[FeatureExplanation(**ex) for ex in explanations]
     )

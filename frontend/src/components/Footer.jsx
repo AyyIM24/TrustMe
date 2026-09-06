@@ -42,7 +42,7 @@ export default function Footer() {
           <div>
             <h4 className="text-xs font-mono font-bold text-pink-800 mb-3 uppercase tracking-wider">Clinical Architecture</h4>
             <div className="flex flex-wrap gap-2">
-              {['FastAPI 0.115', 'DistilBERT', 'Scikit-learn', 'SHAP Attribution', 'CoAID Dataset', 'WebRTC Biometrics'].map(tech => (
+              {['FastAPI 0.115', 'TF-IDF + LR (Live)', 'Scikit-learn', 'SHAP Attribution', 'CoAID Dataset', 'WebRTC Biometrics'].map(tech => (
                 <span key={tech} className="text-[11px] font-mono font-semibold px-2.5 py-1 bg-[#C8E4FA] hover:bg-[#BEE0FB] border border-pink-300 rounded-full text-slate-800 shadow-sm transition-all duration-200">
                   {tech}
                 </span>

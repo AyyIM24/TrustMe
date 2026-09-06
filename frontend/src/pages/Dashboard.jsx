@@ -207,37 +207,54 @@ export default function Dashboard() {
         </>
       )}
 
-      {bertMetrics && baselineMetrics && (
+      {baselineMetrics && (
         <motion.div
           className="bg-[#D6EBFC]/95 border border-pink-300 shadow-card-soft hover:shadow-card-hover hover:border-pink-400 rounded-2xl p-6 mb-10 overflow-x-auto transition-all duration-300"
           initial="hidden" animate="visible" variants={fadeUp} custom={5}
         >
-          <h3 className="text-lg font-bold text-slate-900 mb-4">Baseline vs Transformer Comparison</h3>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+            <h3 className="text-lg font-bold text-slate-900">Model Architecture Benchmark</h3>
+            <span className="text-xs font-mono font-bold text-slate-600 bg-[#C8E4FA] px-3 py-1 rounded-full border border-pink-200 w-fit">
+              Live Architecture: TF-IDF + Logistic Regression
+            </span>
+          </div>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-pink-300">
                 <th className="text-left py-3 text-slate-600 font-semibold">Metric</th>
                 <th className="text-center py-3 text-cyan-800 font-semibold">Baseline (TF-IDF + LR)</th>
                 <th className="text-center py-3 text-teal-800 font-semibold">Transformer (DistilBERT)</th>
-                <th className="text-center py-3 text-slate-600 font-semibold">Improvement</th>
+                <th className="text-center py-3 text-slate-600 font-semibold">Status / Target</th>
               </tr>
             </thead>
             <tbody>
               {['accuracy', 'precision', 'recall', 'f1_score', 'roc_auc'].map(metric => {
                 const b = baselineMetrics[metric]
-                const t = bertMetrics[metric]
-                const diff = t - b
+                const t = bertMetrics ? bertMetrics[metric] : null
+                const diff = t ? t - b : null
                 return (
                   <tr key={metric} className="border-b border-pink-200/70 hover:bg-[#C8E4FA] transition-colors">
                     <td className="py-3 text-slate-800 font-medium capitalize">
                       {metric.replace('_', ' ')}
                     </td>
-                    <td className="py-3 text-center text-slate-800 font-mono">{(b * 100).toFixed(1)}%</td>
-                    <td className="py-3 text-center text-slate-800 font-mono">{(t * 100).toFixed(1)}%</td>
-                    <td className={`py-3 text-center font-bold font-mono ${
-                      diff > 0 ? 'text-emerald-700' : diff < 0 ? 'text-rose-700' : 'text-slate-600'
-                    }`}>
-                      {diff > 0 ? '+' : ''}{(diff * 100).toFixed(1)}%
+                    <td className="py-3 text-center text-slate-800 font-mono font-bold">{(b * 100).toFixed(1)}%</td>
+                    <td className="py-3 text-center text-slate-800 font-mono">
+                      {t ? (
+                        `${(t * 100).toFixed(1)}%`
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-[#C8E4FA] text-cyan-800 border border-pink-300 shadow-sm">
+                          Coming Soon
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3 text-center font-mono text-xs">
+                      {diff !== null ? (
+                        <span className={`font-bold ${diff > 0 ? 'text-emerald-700' : diff < 0 ? 'text-rose-700' : 'text-slate-600'}`}>
+                          {diff > 0 ? '+' : ''}{(diff * 100).toFixed(1)}%
+                        </span>
+                      ) : (
+                        <span className="text-slate-500 font-medium">Fine-Tuning Roadmap</span>
+                      )}
                     </td>
                   </tr>
                 )

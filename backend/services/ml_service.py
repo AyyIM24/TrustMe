@@ -116,41 +116,27 @@ class FakeNewsPredictor:
         explanations.sort(key=lambda x: abs(x["contribution"]), reverse=True)
         return explanations[:5]
 
-    def get_model_comparison(self, text: str, fast_prediction: dict) -> list:
-        """Provide comparisons side-by-side: Fast ML Model vs Deep Transformer Simulation."""
-        import time
-        # Fast model actual details
-        fast_item = {
-            "model_name": "Fast Classifier (TF-IDF + LR)",
-            "prediction": fast_prediction["prediction"],
-            "confidence": fast_prediction["confidence"],
-            "speed_ms": 2.5
-        }
-        
-        # Deep model simulation with slight variation and realistic latency
-        prediction_val = fast_prediction["prediction"]
-        raw_conf = fast_prediction["confidence"]
-        
-        # Add a tiny variance for deep contextual reasoning
-        hashing = sum(ord(c) for c in text[:100]) % 10
-        if hashing < 3:
-            # Occasionally differ on highly ambiguous confidence boundaries
-            if raw_conf < 65:
-                prediction_val = "real" if prediction_val == "fake" else "fake"
-                deep_conf = 58.0 + hashing
-            else:
-                deep_conf = max(50.0, raw_conf - 4.5 + hashing)
-        else:
-            deep_conf = min(99.9, raw_conf + 1.2 + (hashing / 4.0))
+    def get_available_models(self) -> list:
+        """Return which models are actually loaded and ready."""
+        models = []
+        if self.model is not None and self.vectorizer is not None:
+            models.append("baseline")
 
-        deep_item = {
-            "model_name": "Deep Contextual (DistilBERT-v2)",
-            "prediction": prediction_val,
-            "confidence": round(float(deep_conf), 2),
-            "speed_ms": 185.0 + (hashing * 15.0)
-        }
-        
-        return [fast_item, deep_item]
+        # Check if a real transformer checkpoint exists at Model/bert/
+        project_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        for folder in ["Model", "model"]:
+            bert_dir = os.path.join(project_dir, folder, "bert")
+            if os.path.exists(os.path.join(bert_dir, "config.json")):
+                try:
+                    from transformers import AutoModelForSequenceClassification, AutoTokenizer
+                    _ = AutoTokenizer.from_pretrained(bert_dir)
+                    _ = AutoModelForSequenceClassification.from_pretrained(bert_dir)
+                    if "bert" not in models:
+                        models.append("bert")
+                except Exception as e:
+                    print(f"  [WARN] Could not load transformer model from {bert_dir}: {e}")
+                break
+        return models
 
 
 # Global singleton instance

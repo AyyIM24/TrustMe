@@ -147,45 +147,6 @@ const ResultCard = ({ result }) => {
         </div>
       )}
 
-      {/* Side-by-Side Model Comparison Upgrades */}
-      {result.predictions_comparison && result.predictions_comparison.length > 0 && (
-        <div className="mb-6 border border-fs-border rounded-xl overflow-hidden">
-          <div className="p-3 bg-fs-bg/60 border-b border-fs-border flex items-center gap-2">
-            <Cpu className="w-4 h-4 text-fs-cyan" />
-            <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-fs-text">
-              Multi-Classifier Performance Audit
-            </h4>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-fs-border bg-fs-bg/25">
-            {result.predictions_comparison.map((comp) => {
-              const isCompFake = comp.prediction === 'fake';
-              return (
-                <div key={comp.model_name} className="p-4 space-y-2.5">
-                  <div className="flex justify-between items-start">
-                    <p className="text-[11px] font-semibold text-fs-muted font-mono">{comp.model_name}</p>
-                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border
-                      ${isCompFake
-                        ? 'bg-fs-crimson/10 border-fs-crimson/20 text-fs-crimson'
-                        : 'bg-fs-green/10 border-fs-green/20 text-fs-green'
-                      }`}
-                    >
-                      {comp.prediction.toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-fs-muted font-mono">Confidence:</span>
-                    <span className="font-bold text-fs-text font-mono">{comp.confidence}%</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-fs-muted font-mono">Inference Delay:</span>
-                    <span className="text-fs-cyan font-mono">{comp.speed_ms} ms</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {/* Model Explainability Collapsible Accordion */}
       {result.explanations && result.explanations.length > 0 && (

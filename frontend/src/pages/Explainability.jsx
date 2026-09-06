@@ -23,8 +23,8 @@ const howShapWorks = [
   },
   {
     step: '2',
-    title: 'Dual NLP Classification',
-    description: 'Logistic Regression & DistilBERT models compute baseline confidence scores across clinical veracity indices.',
+    title: 'Statistical NLP Classification',
+    description: 'The trained TF-IDF + Logistic Regression model computes rigorous confidence scores across clinical veracity indices (transformer fine-tuning planned).',
   },
   {
     step: '3',
