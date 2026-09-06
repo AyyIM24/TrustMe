@@ -1,0 +1,34 @@
+# HealthGuard AI — Requirements
+# Core
+pandas
+numpy
+scikit-learn
+nltk
+
+# Visualization
+matplotlib
+seaborn
+wordcloud
+plotly
+
+# Transformers (GPU required for training, CPU for inference)
+torch
+transformers
+datasets
+accelerate
+
+# Explainability
+shap
+
+# App — Streamlit (lightweight alternative)
+streamlit
+
+# Backend — FastAPI
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic
+
+# Utilities
+tqdm
+joblib

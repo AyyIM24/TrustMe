@@ -1,0 +1,8 @@
+{
+  "model": "baseline",
+  "accuracy": 0.7749,
+  "precision": 0.7595,
+  "recall": 0.7883,
+  "f1_score": 0.7632,
+  "roc_auc": 0.895
+}

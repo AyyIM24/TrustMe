@@ -1,0 +1,14 @@
+Classification Report — BASELINE
+==================================================
+
+              precision    recall  f1-score   support
+
+        Fake       0.62      0.83      0.71       274
+        Real       0.90      0.75      0.82       548
+
+    accuracy                           0.77       822
+   macro avg       0.76      0.79      0.76       822
+weighted avg       0.81      0.77      0.78       822
+
+Accuracy:  0.7749
+ROC-AUC:   0.8950
