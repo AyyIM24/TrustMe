@@ -150,7 +150,11 @@ const useAuthStore = create((set, get) => ({
     set({ user: null, token: null, refreshToken: null, error: null });
   },
 
-  clearError: () => set({ error: null }),
+  clearError: () => {
+    if (get().error !== null) {
+      set({ error: null });
+    }
+  },
 }));
 
 export default useAuthStore;

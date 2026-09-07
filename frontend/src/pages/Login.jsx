@@ -37,7 +37,7 @@ const Login = () => {
   const isJustRegistered = location.state?.registered || new URLSearchParams(location.search).get('registered') === '1';
 
   useEffect(() => {
-    clearError();
+    useAuthStore.getState().clearError();
     const queryUser = new URLSearchParams(location.search).get('user');
     const stateUser = location.state?.username;
     if (stateUser) {
@@ -45,7 +45,7 @@ const Login = () => {
     } else if (queryUser) {
       setUsername(queryUser);
     }
-  }, [clearError, location]);
+  }, [location.search, location.state]);
 
   // Check face ID availability for user
   useEffect(() => {
@@ -165,7 +165,7 @@ const Login = () => {
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play();
+        videoRef.current.play().catch(() => {});
       }
       setCameraActive(true);
     } catch (err) {
