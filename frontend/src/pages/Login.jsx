@@ -10,10 +10,12 @@ import toast from 'react-hot-toast';
 import ClinicalScanningModal from '../components/common/ClinicalScanningModal';
 import TrustMePulseBadge from '../components/common/TrustMePulseBadge';
 
+const GOOGLE_CLIENT_ID = '949959320287-mulvudjrs9pmvj9ln4ga4i7b4kftq9pr.apps.googleusercontent.com';
+
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, loginWithFace, error, clearError, isLoading } = useAuthStore();
+  const { login, loginWithFace, loginWithGoogle, error, clearError, isLoading } = useAuthStore();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -21,6 +23,7 @@ const Login = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [authStatus, setAuthStatus] = useState('pending'); // 'pending' | 'success' | 'error'
   const [authErrorMessage, setAuthErrorMessage] = useState('');
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   // Biometrics & Camera capture states
   const [showFaceDrawer, setShowFaceDrawer] = useState(false);
@@ -49,6 +52,83 @@ const Login = () => {
       setHasFace(false);
     }
   }, [username]);
+
+  // Google OAuth credential callback handler
+  const handleGoogleCredentialResponse = async (response) => {
+    if (!response?.credential) {
+      toast.error('Google Sign-In failed: No credential received.');
+      return;
+    }
+
+    clearError();
+    setAuthErrorMessage('');
+    setIsGoogleLoading(true);
+
+    try {
+      const res = await loginWithGoogle(response.credential);
+      setIsGoogleLoading(false);
+
+      if (!res.success) {
+        setAuthErrorMessage(res.error || 'Google authentication failed');
+        return;
+      }
+
+      if (res.username) {
+        setUsername(res.username);
+      }
+      toast.success('Google authentication verified!');
+      // Credentials valid: Trigger 3D Doctor & Patient handshake and green heart animation!
+      setAuthStatus('success');
+      setIsScanning(true);
+    } catch (err) {
+      setIsGoogleLoading(false);
+      setAuthErrorMessage('An unexpected error occurred during Google sign in.');
+    }
+  };
+
+  // Initialize Google Identity Services (GSI)
+  useEffect(() => {
+    const initGoogle = () => {
+      if (window.google?.accounts?.id) {
+        try {
+          window.google.accounts.id.initialize({
+            client_id: GOOGLE_CLIENT_ID,
+            callback: handleGoogleCredentialResponse,
+            auto_select: false,
+            cancel_on_tap_outside: true,
+          });
+
+          const googleDiv = document.getElementById('googleSignInDiv');
+          if (googleDiv) {
+            googleDiv.innerHTML = '';
+            window.google.accounts.id.renderButton(googleDiv, {
+              theme: 'outline',
+              size: 'large',
+              type: 'standard',
+              shape: 'pill',
+              text: 'continue_with',
+              logo_alignment: 'left',
+              width: 360,
+            });
+          }
+        } catch (e) {
+          console.warn('Google GSI initialization notice:', e);
+        }
+      }
+    };
+
+    if (window.google?.accounts?.id) {
+      initGoogle();
+    } else {
+      const timer = setInterval(() => {
+        if (window.google?.accounts?.id) {
+          clearInterval(timer);
+          initGoogle();
+        }
+      }, 250);
+      return () => clearInterval(timer);
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -287,6 +367,23 @@ const Login = () => {
             <div className="relative flex justify-center">
               <span className="bg-[#D6EBFC] px-3 text-xs text-slate-500 font-mono font-bold">OR</span>
             </div>
+          </div>
+
+          {/* Google OAuth Section */}
+          <div className="space-y-2">
+            <div className="flex justify-center w-full min-h-[44px]">
+              <div
+                id="googleSignInDiv"
+                className="w-full flex justify-center [&_iframe]:!mx-auto hover:opacity-95 transition-opacity"
+              />
+            </div>
+
+            {isGoogleLoading && (
+              <div className="flex items-center justify-center gap-2 text-xs font-mono text-cyan-800 font-bold py-1">
+                <Shield className="w-4 h-4 animate-spin text-cyan-600" />
+                <span>Verifying Google Identity...</span>
+              </div>
+            )}
           </div>
 
           {/* Info Banner */}

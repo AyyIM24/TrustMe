@@ -18,6 +18,7 @@ class User(Base):
     # New fields for enhanced security
     avatar_url = Column(String(512), nullable=True) # Profile avatar URL
     last_login = Column(DateTime, nullable=True)    # Last login timestamp
+    google_id = Column(String(128), nullable=True, index=True) # Google OAuth Subject ID
 
     # Relationships
     face = relationship("UserFace", back_populates="user", uselist=False, cascade="all, delete-orphan")

@@ -27,11 +27,13 @@ CREATE TABLE `users` (
   `is_active` TINYINT(1) DEFAULT 1,
   `avatar_url` VARCHAR(512) DEFAULT NULL,
   `last_login` DATETIME DEFAULT NULL,
+  `google_id` VARCHAR(128) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_users_username` (`username`),
   UNIQUE KEY `uq_users_email` (`email`),
   KEY `ix_users_username` (`username`),
-  KEY `ix_users_email` (`email`)
+  KEY `ix_users_email` (`email`),
+  KEY `ix_users_google_id` (`google_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------------------------

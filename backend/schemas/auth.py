@@ -19,6 +19,10 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class GoogleLoginRequest(BaseModel):
+    token: str
+
+
 class RegisterRequest(BaseModel):
     username: str
     email: str
@@ -85,6 +89,7 @@ class UserProfile(BaseModel):
     has_face_data: bool
     created_at: str
     last_login: Optional[str] = None
+    avatar_url: Optional[str] = None
 
     class Config:
         from_attributes = True

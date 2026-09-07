@@ -51,6 +51,7 @@ export const authAPI = {
   changePassword: (data) => client.put('/auth/profile/password', data),
   checkFace: (username) => client.get('/auth/check-face', { params: { username } }),
   loginFace: (data) => client.post('/auth/login-face', data),
+  loginGoogle: (token) => client.post('/auth/google', { token }),
 };
 
 // Analysis

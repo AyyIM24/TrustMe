@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     ML_MODEL_VERSION: str = "v1"
     SCRAPER_TIMEOUT: int = 10
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
+    GOOGLE_CLIENT_ID: str = "949959320287-mulvudjrs9pmvj9ln4ga4i7b4kftq9pr.apps.googleusercontent.com"
 
     @property
     def cors_origins_list(self) -> List[str]:

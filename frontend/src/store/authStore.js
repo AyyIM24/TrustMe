@@ -112,6 +112,31 @@ const useAuthStore = create((set, get) => ({
     }
   },
 
+  loginWithGoogle: async (credential) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await authAPI.loginGoogle(credential);
+      const { access_token, refresh_token } = response.data;
+
+      localStorage.setItem('fakeshield_token', access_token);
+      localStorage.setItem('fakeshield_refresh_token', refresh_token);
+
+      set({
+        token: access_token,
+        refreshToken: refresh_token,
+        isLoading: false,
+        error: null,
+      });
+
+      const profile = await get().fetchProfile();
+      return { success: true, username: profile?.username || 'Google User' };
+    } catch (error) {
+      const message = error.response?.data?.detail || 'Google authentication failed';
+      set({ isLoading: false, error: message });
+      return { success: false, error: message };
+    }
+  },
+
   logout: () => {
     localStorage.removeItem('fakeshield_token');
     localStorage.removeItem('fakeshield_refresh_token');
