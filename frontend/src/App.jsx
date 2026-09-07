@@ -15,6 +15,9 @@ import About from './pages/About'
 
 // Protected Pages & Layout
 import ProtectedRoute from './components/auth/ProtectedRoute'
+import AppLayout from './components/layout/AppLayout'
+import PublicNavbar from './components/layout/PublicNavbar'
+import Footer from './components/Footer'
 import Dashboard from './pages/Dashboard'
 import Predict from './pages/Predict'
 import Analyze from './pages/Analyze'
@@ -24,6 +27,26 @@ import LiveNews from './pages/LiveNews'
 import TrendingTopics from './pages/TrendingTopics'
 import Explainability from './pages/Explainability'
 import Profile from './pages/Profile'
+
+function FactCheckWrapper() {
+  const { token } = useAuthStore()
+  if (token) {
+    return (
+      <AppLayout>
+        <PageTransition><FactCheck /></PageTransition>
+      </AppLayout>
+    )
+  }
+  return (
+    <div className="min-h-screen bg-[#FFE6EE] text-slate-900 flex flex-col font-sans transition-colors duration-300">
+      <PublicNavbar />
+      <main className="flex-1">
+        <PageTransition><FactCheck /></PageTransition>
+      </main>
+      <Footer />
+    </div>
+  )
+}
 
 function App() {
   const { initAuth } = useAuthStore()
@@ -104,11 +127,7 @@ function App() {
           />
           <Route
             path="/factcheck"
-            element={
-              <ProtectedRoute>
-                <PageTransition><FactCheck /></PageTransition>
-              </ProtectedRoute>
-            }
+            element={<FactCheckWrapper />}
           />
           <Route
             path="/news"

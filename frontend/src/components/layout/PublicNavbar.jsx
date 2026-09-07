@@ -49,6 +49,9 @@ export default function PublicNavbar() {
             <Link to="/about" className="px-3 py-1.5 rounded-lg hover:text-pink-800 hover:bg-[#C8E4FA] transition-all duration-200">
               Clinical Methodology
             </Link>
+            <Link to="/factcheck" className="px-3 py-1.5 rounded-lg hover:text-pink-800 hover:bg-[#C8E4FA] transition-all duration-200 font-semibold text-teal-800">
+              Medical Fact Check
+            </Link>
           </div>
 
           {/* Action CTAs */}

@@ -9,6 +9,7 @@ import CredibilityPanel from '../components/analyze/CredibilityPanel';
 import StatusBarLoader from '../components/ui/StatusBarLoader';
 import { analyzeAPI } from '../api/client';
 import toast from 'react-hot-toast';
+import TrustMePulseBadge from '../components/common/TrustMePulseBadge';
 
 const Analyze = () => {
   const navigate = useNavigate();

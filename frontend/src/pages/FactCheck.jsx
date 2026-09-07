@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { factCheckAPI } from '../api/client';
 import toast from 'react-hot-toast';
+import TrustMePulseBadge from '../components/common/TrustMePulseBadge';
 
 // ── Verdict Config ────────────────────────────────────────────────
 const VERDICT_CONFIG = {
