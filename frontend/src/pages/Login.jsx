@@ -33,15 +33,19 @@ const Login = () => {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
 
-  // Check if routed after registration
-  const isJustRegistered = location.state?.registered;
+  // Check if routed after registration (support both React Router state and query parameters)
+  const isJustRegistered = location.state?.registered || new URLSearchParams(location.search).get('registered') === '1';
 
   useEffect(() => {
     clearError();
-    if (location.state?.username) {
-      setUsername(location.state.username);
+    const queryUser = new URLSearchParams(location.search).get('user');
+    const stateUser = location.state?.username;
+    if (stateUser) {
+      setUsername(stateUser);
+    } else if (queryUser) {
+      setUsername(queryUser);
     }
-  }, [clearError, location.state]);
+  }, [clearError, location]);
 
   // Check face ID availability for user
   useEffect(() => {

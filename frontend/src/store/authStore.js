@@ -72,9 +72,15 @@ const useAuthStore = create((set, get) => ({
       }
 
       await authAPI.register(payload);
-      // Registration successful; do NOT auto-login.
+      // Registration successful; ensure all tokens are cleared so user is not logged in.
       // User must explicitly authenticate on the login page.
+      localStorage.removeItem('fakeshield_token');
+      localStorage.removeItem('fakeshield_refresh_token');
+      localStorage.removeItem('fakeshield_user');
       set({
+        token: null,
+        refreshToken: null,
+        user: null,
         isLoading: false,
         error: null,
       });

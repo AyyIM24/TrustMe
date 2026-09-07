@@ -7,7 +7,6 @@ import {
   UserCheck, Scan, X, HeartPulse
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
-import ClinicalScanningModal from '../components/common/ClinicalScanningModal';
 import TrustMePulseBadge from '../components/common/TrustMePulseBadge';
 import toast from 'react-hot-toast';
 
@@ -190,40 +189,40 @@ const FaceCapture = ({ onCapture, onSkip }) => {
   return (
     <div className="space-y-4">
       <div className="text-center space-y-1">
-        <div className="inline-flex p-3 bg-fs-cyan/10 border border-fs-cyan/20 rounded-xl text-fs-cyan mb-2">
+        <div className="inline-flex p-3 bg-[#C8E4FA] border border-pink-300 rounded-2xl text-cyan-800 mb-2 shadow-sm">
           <Scan className="w-6 h-6" />
         </div>
-        <h2 className="text-xl font-bold font-mono uppercase tracking-wider">Face Registration</h2>
-        <p className="text-xs text-fs-muted">Capture your face to enable biometric identification. Fully optional.</p>
+        <h2 className="text-xl font-bold font-mono uppercase tracking-wider text-slate-900">Face Registration</h2>
+        <p className="text-xs text-slate-600">Capture your face to enable biometric identification. Fully optional.</p>
       </div>
 
       {cameraError ? (
-        <div className="p-4 bg-fs-crimson/10 border border-fs-crimson/20 rounded-xl text-xs text-fs-crimson font-mono text-center">
+        <div className="p-4 bg-rose-50 border border-rose-300 rounded-2xl text-xs text-rose-700 font-mono text-center shadow-sm">
           {cameraError}
         </div>
       ) : (
         <div className="relative mx-auto" style={{ width: 280, height: 210 }}>
           {/* Camera frame */}
-          <div className="relative w-full h-full rounded-2xl overflow-hidden border-2 border-fs-cyan/30 bg-[#080C14]">
+          <div className="relative w-full h-full rounded-2xl overflow-hidden border-2 border-pink-300 bg-slate-900 shadow-md">
             {!captured ? (
               <video ref={videoRef} className="w-full h-full object-cover scale-x-[-1]" muted playsInline />
             ) : (
               <img src={captured} alt="Captured" className="w-full h-full object-cover scale-x-[-1]" />
             )}
             {/* Overlay corners */}
-            <div className="absolute top-2 left-2 w-6 h-6 border-t-2 border-l-2 border-fs-cyan rounded-tl" />
-            <div className="absolute top-2 right-2 w-6 h-6 border-t-2 border-r-2 border-fs-cyan rounded-tr" />
-            <div className="absolute bottom-2 left-2 w-6 h-6 border-b-2 border-l-2 border-fs-cyan rounded-bl" />
-            <div className="absolute bottom-2 right-2 w-6 h-6 border-b-2 border-r-2 border-fs-cyan rounded-br" />
+            <div className="absolute top-2 left-2 w-6 h-6 border-t-2 border-l-2 border-cyan-400 rounded-tl" />
+            <div className="absolute top-2 right-2 w-6 h-6 border-t-2 border-r-2 border-cyan-400 rounded-tr" />
+            <div className="absolute bottom-2 left-2 w-6 h-6 border-b-2 border-l-2 border-cyan-400 rounded-bl" />
+            <div className="absolute bottom-2 right-2 w-6 h-6 border-b-2 border-r-2 border-cyan-400 rounded-br" />
             {/* Countdown overlay */}
             {countdown !== null && (
-              <div className="absolute inset-0 flex items-center justify-center bg-fs-bg/50">
-                <span className="text-6xl font-black text-fs-cyan font-mono animate-pulse">{countdown}</span>
+              <div className="absolute inset-0 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
+                <span className="text-6xl font-black text-cyan-300 font-mono animate-pulse">{countdown}</span>
               </div>
             )}
             {captured && (
-              <div className="absolute inset-0 flex items-center justify-center bg-fs-bg/30">
-                <CheckCircle className="w-12 h-12 text-fs-green drop-shadow-lg" />
+              <div className="absolute inset-0 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs">
+                <CheckCircle className="w-12 h-12 text-emerald-400 drop-shadow-lg" />
               </div>
             )}
           </div>
@@ -239,9 +238,9 @@ const FaceCapture = ({ onCapture, onSkip }) => {
               type="button"
               onClick={startCountdown}
               disabled={!cameraActive || countdown !== null}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-fs-cyan/10 border border-fs-cyan/30 text-fs-cyan text-sm font-mono hover:bg-fs-cyan/20 disabled:opacity-40 transition-all"
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#C8E4FA] hover:bg-[#BEE0FB] border border-pink-300 text-cyan-900 text-xs font-mono font-bold hover:border-pink-400 disabled:opacity-40 transition-all shadow-sm cursor-pointer"
             >
-              <Camera className="w-4 h-4" />
+              <Camera className="w-4 h-4 text-cyan-700" />
               {countdown !== null ? `Capturing in ${countdown}...` : 'Capture Face'}
             </button>
           </>
@@ -250,14 +249,14 @@ const FaceCapture = ({ onCapture, onSkip }) => {
             <button
               type="button"
               onClick={retake}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-fs-surface border border-fs-border text-fs-muted text-sm font-mono hover:text-fs-text transition-all"
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#C8E4FA] hover:bg-[#BEE0FB] border border-pink-300 text-slate-800 text-xs font-mono font-bold transition-all shadow-sm cursor-pointer"
             >
               <RefreshCw className="w-4 h-4" /> Retake
             </button>
             <button
               type="button"
               onClick={confirmCapture}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-fs-cyan text-fs-bg text-sm font-bold font-mono hover:bg-fs-cyan/90 transition-all"
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white text-xs font-bold font-mono transition-all shadow-sm cursor-pointer"
             >
               <CheckCircle className="w-4 h-4" /> Confirm
             </button>
@@ -268,7 +267,7 @@ const FaceCapture = ({ onCapture, onSkip }) => {
       <button
         type="button"
         onClick={onSkip}
-        className="w-full text-xs text-fs-muted font-mono hover:text-fs-text transition-colors py-1"
+        className="w-full text-xs text-slate-500 font-mono hover:text-slate-800 transition-colors py-1 cursor-pointer"
       >
         Skip this step — I'll set it up later
       </button>
@@ -287,16 +286,16 @@ const SuccessStep = ({ username, hasFace, onProceedToLogin }) => (
       initial={{ scale: 0 }}
       animate={{ scale: 1 }}
       transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-      className="inline-flex p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-emerald-400 shadow-lg shadow-emerald-500/20"
+      className="inline-flex p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-emerald-600 shadow-lg shadow-emerald-500/20"
     >
       <UserCheck className="w-10 h-10" />
     </motion.div>
     <div>
-      <h2 className="text-2xl font-black font-mono uppercase tracking-wider text-emerald-600">
+      <h2 className="text-2xl font-black font-mono uppercase tracking-wider text-emerald-700">
         Clinical Identity Created
       </h2>
       <p className="text-xs text-slate-600 mt-1">
-        Welcome to TrustMe AI, <span className="text-cyan-700 font-bold">{username}</span>
+        Account successfully created for <span className="text-cyan-800 font-bold">{username}</span>
       </p>
     </div>
     <div className="space-y-2 text-xs font-mono text-slate-800 bg-[#C8E4FA] border border-pink-300 p-3.5 rounded-xl max-w-xs mx-auto text-left shadow-sm">
@@ -313,12 +312,12 @@ const SuccessStep = ({ username, hasFace, onProceedToLogin }) => (
       )}
     </div>
     <p className="text-xs text-cyan-800 font-mono font-semibold animate-pulse">
-      Redirecting to Secure Login Portal... Please sign in to enter.
+      Redirecting to Login Portal... Please sign in to enter.
     </p>
     <button
       type="button"
       onClick={onProceedToLogin}
-      className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950 font-bold text-xs font-mono uppercase tracking-wider transition-all shadow-md shadow-cyan-500/20"
+      className="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-white font-bold text-xs font-mono uppercase tracking-wider transition-all shadow-md shadow-cyan-500/20 hover:shadow-lg hover:scale-[1.02] active:scale-95 cursor-pointer"
     >
       Proceed to Sign In Now →
     </button>
@@ -333,7 +332,6 @@ const Register = () => {
   const [step, setStep] = useState(1);
   const [faceData, setFaceData] = useState(null);
   const [registered, setRegistered] = useState(false);
-  const [isScanning, setIsScanning] = useState(false);
 
   // Step 1 fields
   const [username, setUsername] = useState('');
@@ -374,21 +372,21 @@ const Register = () => {
     clearError();
     const res = await register(username.trim(), email.trim(), password, confirmPassword, face);
     if (res?.success) {
-      setIsScanning(true);
+      toast.success('Registration successful! Redirecting to login...');
+      setStep(3);
+      setRegistered(true);
+      setTimeout(() => {
+        navigate(`/login?registered=1&user=${encodeURIComponent(username.trim())}`, {
+          state: { registered: true, username: username.trim() },
+        });
+      }, 1500);
     }
   };
 
-  const handleScanComplete = () => {
-    setIsScanning(false);
-    setStep(3);
-    setRegistered(true);
-    setTimeout(() => {
-      navigate(`/login?registered=1&user=${encodeURIComponent(username.trim())}`);
-    }, 2400);
-  };
-
   const handleManualProceed = () => {
-    navigate(`/login?registered=1&user=${encodeURIComponent(username.trim())}`);
+    navigate(`/login?registered=1&user=${encodeURIComponent(username.trim())}`, {
+      state: { registered: true, username: username.trim() },
+    });
   };
 
   const totalSteps = 3;
@@ -537,21 +535,6 @@ const Register = () => {
           </AnimatePresence>
         </motion.div>
       </div>
-
-      {/* Interactive Clinical Holographic Synthesis Modal */}
-      <ClinicalScanningModal
-        isOpen={isScanning}
-        title="Synthesizing Clinical Identity"
-        subtitle={`Generating biometric vault for ${username}`}
-        steps={[
-          "Encoding Clinical Bio-Credentials...",
-          "Validating Healthcare Security Protocol...",
-          "Securing Account in TrustMe AI Vault...",
-          "Identity Registered — Ready for Login"
-        ]}
-        duration={2200}
-        onComplete={handleScanComplete}
-      />
     </div>
   );
 };
