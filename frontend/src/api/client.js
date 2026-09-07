@@ -89,6 +89,7 @@ export const newsAPI = {
 // Fact Check
 export const factCheckAPI = {
   check: (claim) => client.post('/factcheck/check', { claim }),
+  checkClaim: (claim) => client.post('/factcheck/check', { claim }),
   getExamples: () => client.get('/factcheck/examples'),
 };
 

@@ -12,35 +12,35 @@ import toast from 'react-hot-toast';
 const VERDICT_CONFIG = {
   'LIKELY TRUE': {
     icon: CheckCircle,
-    bg: 'bg-fs-green/10',
-    border: 'border-fs-green/30',
-    text: 'text-fs-green',
-    badge: 'bg-fs-green/20 border-fs-green/40',
-    glow: 'shadow-[0_0_40px_rgba(0,255,136,0.12)]',
+    bg: 'bg-emerald-50/95',
+    border: 'border-emerald-300',
+    text: 'text-emerald-800',
+    badge: 'bg-emerald-100/90 border-emerald-300 text-emerald-800',
+    glow: 'shadow-card-soft shadow-emerald-500/10',
   },
   'LIKELY FALSE': {
     icon: XCircle,
-    bg: 'bg-fs-crimson/10',
-    border: 'border-fs-crimson/30',
-    text: 'text-fs-crimson',
-    badge: 'bg-fs-crimson/20 border-fs-crimson/40',
-    glow: 'shadow-[0_0_40px_rgba(255,45,85,0.12)]',
+    bg: 'bg-rose-50/95',
+    border: 'border-rose-300',
+    text: 'text-rose-800',
+    badge: 'bg-rose-100/90 border-rose-300 text-rose-800',
+    glow: 'shadow-card-soft shadow-rose-500/10',
   },
   'MIXED / PARTIAL': {
     icon: AlertTriangle,
-    bg: 'bg-fs-amber/10',
-    border: 'border-fs-amber/30',
-    text: 'text-fs-amber',
-    badge: 'bg-fs-amber/20 border-fs-amber/40',
-    glow: 'shadow-[0_0_40px_rgba(255,179,0,0.12)]',
+    bg: 'bg-amber-50/95',
+    border: 'border-amber-300',
+    text: 'text-amber-800',
+    badge: 'bg-amber-100/90 border-amber-300 text-amber-800',
+    glow: 'shadow-card-soft shadow-amber-500/10',
   },
   'UNVERIFIABLE': {
     icon: HelpCircle,
-    bg: 'bg-fs-cyan/10',
-    border: 'border-fs-cyan/30',
-    text: 'text-fs-cyan',
-    badge: 'bg-fs-cyan/20 border-fs-cyan/40',
-    glow: 'shadow-[0_0_40px_rgba(0,212,255,0.10)]',
+    bg: 'bg-[#D6EBFC]/95',
+    border: 'border-pink-300',
+    text: 'text-cyan-900',
+    badge: 'bg-[#C8E4FA] border-pink-300 text-cyan-800',
+    glow: 'shadow-card-soft shadow-cyan-500/10',
   },
 };
 
@@ -50,14 +50,14 @@ const ConfidenceRing = ({ confidence, color }) => {
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (confidence / 100) * circumference;
   const colorMap = {
-    green: '#00FF88', red: '#FF2D55', amber: '#FFB300', cyan: '#00D4FF',
+    green: '#059669', red: '#E11D48', amber: '#D97706', cyan: '#0891B2',
   };
-  const stroke = colorMap[color] || '#00D4FF';
+  const stroke = colorMap[color] || '#0891B2';
 
   return (
-    <div className="relative w-24 h-24 flex items-center justify-center">
+    <div className="relative w-24 h-24 flex items-center justify-center flex-shrink-0">
       <svg className="absolute inset-0 -rotate-90" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r={radius} fill="none" stroke="#1A2540" strokeWidth="6" />
+        <circle cx="50" cy="50" r={radius} fill="none" stroke="#FBCFE8" strokeWidth="6" />
         <circle
           cx="50" cy="50" r={radius} fill="none"
           stroke={stroke} strokeWidth="6"
@@ -69,7 +69,7 @@ const ConfidenceRing = ({ confidence, color }) => {
       </svg>
       <div className="text-center">
         <p className="text-2xl font-black font-mono" style={{ color: stroke }}>{confidence}%</p>
-        <p className="text-[8px] text-fs-muted font-mono uppercase">Match</p>
+        <p className="text-[9px] text-slate-600 font-mono font-bold uppercase tracking-wider">Match</p>
       </div>
     </div>
   );
@@ -85,64 +85,68 @@ const ResultCard = ({ result }) => {
       initial={{ opacity: 0, y: 20, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.4 }}
-      className={`rounded-2xl border p-6 space-y-5 ${cfg.bg} ${cfg.border} ${cfg.glow}`}
+      className={`rounded-3xl border p-6 md:p-8 space-y-6 shadow-card-hover hover:border-pink-400 transition-all ${cfg.bg} ${cfg.border} ${cfg.glow}`}
     >
       {/* Header */}
-      <div className="flex items-start gap-4">
-        <div className={`p-2.5 rounded-xl border ${cfg.badge} flex-shrink-0`}>
-          <Icon className={`w-7 h-7 ${cfg.text}`} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className={`text-2xl font-black font-mono tracking-wider ${cfg.text}`}>
-            {result.verdict}
-          </p>
-          <p className="text-xs text-fs-muted font-mono mt-0.5 line-clamp-2">
-            "{result.claim}"
-          </p>
+      <div className="flex items-start gap-4 justify-between">
+        <div className="flex items-start gap-3.5 min-w-0">
+          <div className={`p-3 rounded-2xl border ${cfg.badge} flex-shrink-0 shadow-sm`}>
+            <Icon className={`w-7 h-7 ${cfg.text}`} />
+          </div>
+          <div className="min-w-0">
+            <p className={`text-2xl sm:text-3xl font-black font-mono tracking-wider ${cfg.text}`}>
+              {result.verdict}
+            </p>
+            <p className="text-xs text-slate-700 font-medium mt-1 line-clamp-2 leading-relaxed">
+              "{result.claim}"
+            </p>
+          </div>
         </div>
         <ConfidenceRing confidence={result.confidence} color={result.verdict_color} />
       </div>
 
       {/* Explanation */}
-      <div className="bg-fs-bg/50 rounded-xl p-4 border border-fs-border/40">
-        <p className="text-sm text-fs-text leading-relaxed">{result.explanation}</p>
+      <div className="bg-[#C8E4FA] rounded-2xl p-4 sm:p-5 border border-pink-300 shadow-inner">
+        <p className="text-sm text-slate-800 leading-relaxed font-medium">{result.explanation}</p>
       </div>
 
       {/* Evidence */}
       {result.evidence && result.evidence.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-[10px] font-mono text-fs-muted uppercase tracking-widest flex items-center gap-1.5">
-            <BookOpen className="w-3 h-3" /> Reference Sources
+        <div className="space-y-2.5">
+          <p className="text-xs font-mono font-bold text-pink-800 uppercase tracking-widest flex items-center gap-1.5">
+            <BookOpen className="w-3.5 h-3.5 text-teal-700" /> Reference Sources
           </p>
-          {result.evidence.map((ev, i) => (
-            <div key={i} className="bg-fs-surface/60 rounded-xl border border-fs-border p-3 space-y-1.5">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] font-mono text-fs-cyan bg-fs-cyan/10 border border-fs-cyan/20 px-2 py-0.5 rounded-full">
-                  {ev.source}
-                </span>
-                {ev.url && (
-                  <a
-                    href={ev.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-[10px] text-fs-muted hover:text-fs-cyan transition-colors font-mono"
-                  >
-                    <ExternalLink className="w-3 h-3" /> View Source
-                  </a>
-                )}
+          <div className="space-y-2">
+            {result.evidence.map((ev, i) => (
+              <div key={i} className="bg-[#C8E4FA] rounded-2xl border border-pink-300 p-4 space-y-2 shadow-sm hover:shadow-md hover:border-pink-400 transition-all">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <span className="text-xs font-mono font-bold text-cyan-800 bg-[#D6EBFC] border border-pink-300 px-3 py-1 rounded-full shadow-sm">
+                    {ev.source}
+                  </span>
+                  {ev.url && (
+                    <a
+                      href={ev.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-xs text-teal-700 hover:text-teal-900 font-bold font-mono transition-colors underline"
+                    >
+                      <ExternalLink className="w-3 h-3" /> View Source
+                    </a>
+                  )}
+                </div>
+                <p className="text-xs text-slate-700 leading-relaxed">{ev.snippet}</p>
               </div>
-              <p className="text-xs text-fs-muted leading-relaxed">{ev.snippet}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
       {/* Searched Topics */}
       {result.searched_topics?.length > 0 && (
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] font-mono text-fs-muted">Searched:</span>
+        <div className="flex items-center gap-2 flex-wrap pt-1">
+          <span className="text-xs font-mono font-bold text-slate-600">Searched Topics:</span>
           {result.searched_topics.map((t, i) => (
-            <span key={i} className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-fs-surface border border-fs-border text-fs-muted">
+            <span key={i} className="text-xs font-mono font-semibold px-3 py-1 rounded-full bg-[#C8E4FA] border border-pink-300 text-cyan-900 shadow-sm">
               {t}
             </span>
           ))}
@@ -150,8 +154,8 @@ const ResultCard = ({ result }) => {
       )}
 
       {/* Disclaimer */}
-      <p className="text-[10px] text-fs-muted font-mono opacity-70">
-        ⚠ This is AI-assisted verification using Wikipedia. Always cross-check with official authoritative sources.
+      <p className="text-xs text-slate-500 font-mono">
+        ⚠ This is AI-assisted verification using Wikipedia & clinical references. Always cross-check with authoritative healthcare providers.
       </p>
     </motion.div>
   );
@@ -178,20 +182,17 @@ const CheckingAnimation = ({ claim }) => {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="bg-fs-surface border border-fs-border rounded-2xl p-8 text-center space-y-4"
+      className="bg-[#D6EBFC]/95 border border-pink-300 rounded-3xl p-8 text-center space-y-4 shadow-card-soft"
     >
       <div className="relative w-16 h-16 mx-auto">
-        <div className="absolute inset-0 rounded-full border-2 border-fs-cyan/20" />
-        <div className="absolute inset-0 rounded-full border-t-2 border-fs-cyan animate-spin" />
-        <div className="absolute inset-2 rounded-full border-t border-fs-cyan/40 animate-spin" style={{ animationDuration: '1.5s' }} />
-        <div className="absolute inset-0 rounded-full border-2 border-cyan-400/20" />
+        <div className="absolute inset-0 rounded-full border-2 border-pink-200" />
         <div className="absolute inset-0 rounded-full border-t-2 border-cyan-500 animate-spin" />
-        <div className="absolute inset-2 rounded-full border-t border-cyan-500/40 animate-spin" style={{ animationDuration: '1.5s' }} />
-        <Search className="absolute inset-0 m-auto w-6 h-6 text-cyan-600" />
+        <div className="absolute inset-2 rounded-full border-t border-teal-400 animate-spin" style={{ animationDuration: '1.5s' }} />
+        <Search className="absolute inset-0 m-auto w-6 h-6 text-cyan-700" />
       </div>
       <div>
         <p className="text-sm font-bold text-slate-900">Verifying Claim</p>
-        <p className="text-xs text-slate-500 font-mono mt-1 line-clamp-1">"{claim}"</p>
+        <p className="text-xs text-slate-600 font-mono mt-1 line-clamp-1 font-medium">"{claim}"</p>
       </div>
       <AnimatePresence mode="wait">
         <motion.p
@@ -199,7 +200,7 @@ const CheckingAnimation = ({ claim }) => {
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
-          className="text-xs text-cyan-700 font-mono"
+          className="text-xs text-cyan-800 font-mono font-bold"
         >
           {steps[step]}
         </motion.p>
@@ -218,7 +219,7 @@ const FactCheck = () => {
 
   useEffect(() => {
     factCheckAPI.getExamples()
-      .then(res => setExamples(res.examples || []))
+      .then(res => setExamples(res.data?.examples || res.examples || []))
       .catch(() => setExamples([
         'COVID-19 mRNA vaccines alter human DNA permanently.',
         'Drinking hot water with lemon kills the coronavirus in the throat.',
@@ -235,8 +236,9 @@ const FactCheck = () => {
     setLoading(true);
     setResult(null);
     try {
-      const res = await factCheckAPI.checkClaim(claim.trim());
-      setResult(res);
+      const res = await factCheckAPI.check(claim.trim());
+      const data = res.data || res;
+      setResult(data);
       toast.success('Clinical fact-check complete');
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Fact-check request failed. Please verify API status.');
