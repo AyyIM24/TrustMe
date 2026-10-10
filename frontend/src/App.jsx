@@ -48,6 +48,26 @@ function FactCheckWrapper() {
   )
 }
 
+function LiveNewsWrapper() {
+  const { token } = useAuthStore()
+  if (token) {
+    return (
+      <AppLayout>
+        <PageTransition><LiveNews /></PageTransition>
+      </AppLayout>
+    )
+  }
+  return (
+    <div className="min-h-screen bg-[#FFE6EE] text-slate-900 flex flex-col font-sans transition-colors duration-300">
+      <PublicNavbar />
+      <main className="flex-1">
+        <PageTransition><LiveNews /></PageTransition>
+      </main>
+      <Footer />
+    </div>
+  )
+}
+
 function App() {
   const { initAuth } = useAuthStore()
   const location = useLocation()
@@ -131,11 +151,7 @@ function App() {
           />
           <Route
             path="/news"
-            element={
-              <ProtectedRoute>
-                <PageTransition><LiveNews /></PageTransition>
-              </ProtectedRoute>
-            }
+            element={<LiveNewsWrapper />}
           />
           <Route
             path="/trending"

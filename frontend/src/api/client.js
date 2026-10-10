@@ -30,7 +30,7 @@ client.interceptors.response.use(
       localStorage.removeItem('fakeshield_refresh_token');
       localStorage.removeItem('fakeshield_user');
       // Only redirect on protected pages
-      const publicPaths = ['/', '/login', '/register', '/trending', '/news'];
+      const publicPaths = ['/', '/login', '/register', '/trending', '/news', '/factcheck'];
       if (!publicPaths.includes(window.location.pathname)) {
         window.location.href = '/login';
       }
