@@ -104,5 +104,5 @@ async def optional_auth(
         token_data = decode_token(token)
         user = db.query(User).filter(User.id == token_data.user_id).first()
         return user if user and user.is_active else None
-    except HTTPException:
+    except Exception:
         return None

@@ -221,11 +221,6 @@ const LiveNews = () => {
   }, [category, fetchNews]);
 
   const handleVerify = async (article) => {
-    if (!token) {
-      toast.error('Please login to verify articles');
-      navigate('/login');
-      return;
-    }
     setVerifyingUrl(article.url);
     try {
       const text = `${article.title}. ${article.description || ''}`;

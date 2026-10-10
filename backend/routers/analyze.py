@@ -9,8 +9,9 @@ from schemas.analysis import (
 )
 from services.ml_service import predictor
 from services.url_scraper import scrape_article
-from services.auth_service import get_current_user
+from services.auth_service import optional_auth
 from services.credibility_service import analyze_credibility, generate_tags
+from typing import Optional
 
 router = APIRouter(tags=["Analysis"])
 
@@ -19,9 +20,9 @@ router = APIRouter(tags=["Analysis"])
 async def analyze_text(
     payload: AnalyzeRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(optional_auth)
 ):
-    """Analyze text for fake news detection. Authentication REQUIRED."""
+    """Analyze text for fake news detection. Authentication OPTIONAL (saves to history if logged in)."""
     if not payload.text or len(payload.text.strip()) < 10:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -39,7 +40,7 @@ async def analyze_text(
 
     # Save to database
     record = Analysis(
-        user_id=current_user.id,
+        user_id=current_user.id if current_user else None,
         input_text=payload.text[:5000],
         title=payload.title,
         source_url=payload.source_url,
@@ -78,9 +79,9 @@ async def analyze_text(
 async def analyze_url(
     payload: AnalyzeUrlRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(optional_auth)
 ):
-    """Scrape a URL and analyze the article text. Authentication REQUIRED."""
+    """Scrape a URL and analyze the article text. Authentication OPTIONAL (saves to history if logged in)."""
     try:
         scraped = await scrape_article(payload.url)
     except Exception as e:
@@ -107,7 +108,7 @@ async def analyze_url(
 
     # Save to database
     record = Analysis(
-        user_id=current_user.id,
+        user_id=current_user.id if current_user else None,
         input_text=scraped["text"][:5000],
         title=scraped["title"],
         source_url=payload.url,
