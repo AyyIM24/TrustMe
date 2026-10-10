@@ -11,6 +11,7 @@ from services.ml_service import predictor
 from services.url_scraper import scrape_article
 from services.auth_service import optional_auth
 from services.credibility_service import analyze_credibility, generate_tags
+from services.ensemble_service import compute_ensemble
 from typing import Optional
 
 router = APIRouter(tags=["Analysis"])
@@ -29,14 +30,24 @@ async def analyze_text(
             detail="Text must be at least 10 characters long"
         )
 
-    # Run ML prediction
-    result = predictor.predict(payload.text)
+    # Run ML prediction (raw signal — biased toward US data, will be blended)
+    ml_result = predictor.predict(payload.text)
     keywords = predictor.get_top_keywords(payload.text)
 
     # Multi-signal credibility analysis
     credibility = analyze_credibility(payload.title or "", payload.text, payload.source_url)
-    tags = generate_tags(payload.title or "", payload.text, result["prediction"], credibility["credibility_score"])
     explanations = predictor.explain_prediction(payload.text)
+
+    # Ensemble: blend ML + credibility + myth detection
+    ensemble = compute_ensemble(
+        ml_result=ml_result,
+        credibility=credibility,
+        source_url=payload.source_url,
+        title=payload.title or "",
+        text=payload.text,
+    )
+
+    tags = generate_tags(payload.title or "", payload.text, ensemble["prediction"], credibility["credibility_score"])
 
     # Save to database
     record = Analysis(
@@ -44,11 +55,11 @@ async def analyze_text(
         input_text=payload.text[:5000],
         title=payload.title,
         source_url=payload.source_url,
-        prediction=result["prediction"],
-        confidence=result["confidence"],
+        prediction=ensemble["prediction"],
+        confidence=ensemble["confidence"],
         credibility_score=credibility["credibility_score"],
-        model_version=result["model_version"],
-        word_count=result["word_count"]
+        model_version=ensemble["model_version"],
+        word_count=ml_result["word_count"]
     )
     db.add(record)
     db.commit()
@@ -56,12 +67,12 @@ async def analyze_text(
 
     return AnalyzeResponse(
         id=record.id,
-        prediction=result["prediction"],
-        confidence=result["confidence"],
-        fake_probability=result["fake_probability"],
-        real_probability=result["real_probability"],
-        word_count=result["word_count"],
-        model_version=result["model_version"],
+        prediction=ensemble["prediction"],
+        confidence=ensemble["confidence"],
+        fake_probability=ensemble["fake_probability"],
+        real_probability=ensemble["real_probability"],
+        word_count=ml_result["word_count"],
+        model_version=ensemble["model_version"],
         keywords=[KeywordItem(**kw) for kw in keywords],
         title=payload.title,
         source_url=payload.source_url,
@@ -97,14 +108,24 @@ async def analyze_url(
             detail="Could not extract sufficient text from the URL"
         )
 
-    # Run ML prediction
-    result = predictor.predict(scraped["text"])
+    # Run ML prediction (raw signal — will be blended with credibility)
+    ml_result = predictor.predict(scraped["text"])
     keywords = predictor.get_top_keywords(scraped["text"])
 
     # Multi-signal credibility analysis
     credibility = analyze_credibility(scraped.get("title") or "", scraped["text"], payload.url)
-    tags = generate_tags(scraped.get("title") or "", scraped["text"], result["prediction"], credibility["credibility_score"])
     explanations = predictor.explain_prediction(scraped["text"])
+
+    # Ensemble: blend ML + credibility + myth detection
+    ensemble = compute_ensemble(
+        ml_result=ml_result,
+        credibility=credibility,
+        source_url=payload.url,
+        title=scraped.get("title") or "",
+        text=scraped["text"],
+    )
+
+    tags = generate_tags(scraped.get("title") or "", scraped["text"], ensemble["prediction"], credibility["credibility_score"])
 
     # Save to database
     record = Analysis(
@@ -112,11 +133,11 @@ async def analyze_url(
         input_text=scraped["text"][:5000],
         title=scraped["title"],
         source_url=payload.url,
-        prediction=result["prediction"],
-        confidence=result["confidence"],
+        prediction=ensemble["prediction"],
+        confidence=ensemble["confidence"],
         credibility_score=credibility["credibility_score"],
-        model_version=result["model_version"],
-        word_count=result["word_count"]
+        model_version=ensemble["model_version"],
+        word_count=ml_result["word_count"]
     )
     db.add(record)
     db.commit()
@@ -124,12 +145,12 @@ async def analyze_url(
 
     return AnalyzeResponse(
         id=record.id,
-        prediction=result["prediction"],
-        confidence=result["confidence"],
-        fake_probability=result["fake_probability"],
-        real_probability=result["real_probability"],
-        word_count=result["word_count"],
-        model_version=result["model_version"],
+        prediction=ensemble["prediction"],
+        confidence=ensemble["confidence"],
+        fake_probability=ensemble["fake_probability"],
+        real_probability=ensemble["real_probability"],
+        word_count=ml_result["word_count"],
+        model_version=ensemble["model_version"],
         keywords=[KeywordItem(**kw) for kw in keywords],
         title=scraped["title"],
         source_url=payload.url,
