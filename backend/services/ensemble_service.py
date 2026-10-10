@@ -97,7 +97,7 @@ def compute_ensemble(ml_result, credibility, source_url=None, title="", text="")
             "fake_probability": fake_prob,
             "real_probability": real_prob,
             "ensemble_method": "MYTH_OVERRIDE: Matched known clinical myth — " + myth_match,
-            "model_version": "ensemble-v2-myth",
+            "model_version": "ens-v2-myth",
         }
 
     # Signal 2: Authoritative Source Override
@@ -116,7 +116,7 @@ def compute_ensemble(ml_result, credibility, source_url=None, title="", text="")
             "fake_probability": fake_prob,
             "real_probability": real_prob,
             "ensemble_method": "AUTHORITY_DOMAIN: Verified publisher (" + domain + "), credibility=" + str(credibility_score),
-            "model_version": "ensemble-v2-authority",
+            "model_version": "ens-v2-authority",
         }
 
     # Signal 3: Blend ML + Credibility (40% ML, 60% credibility)
@@ -147,5 +147,5 @@ def compute_ensemble(ml_result, credibility, source_url=None, title="", text="")
         "fake_probability": fake_prob_final,
         "real_probability": real_prob_final,
         "ensemble_method": method_str,
-        "model_version": "ensemble-v2-blend",
+        "model_version": "ens-v2-blend",
     }
