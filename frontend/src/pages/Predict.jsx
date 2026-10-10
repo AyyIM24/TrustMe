@@ -6,16 +6,20 @@ import TrustMePulseBadge from '../components/common/TrustMePulseBadge'
 
 const sampleTexts = [
   {
-    label: 'Fake Claim',
-    text: 'Drinking bleach mixed with water can cure COVID-19 and kill the virus within hours. Several doctors in South America have confirmed this treatment works better than any vaccine.',
+    label: 'Dengue Myth (Fake)',
+    text: 'Drinking boiled papaya leaf juice and raw goat milk cures dengue fever and permanently restores platelets without hospital admission.',
   },
   {
-    label: 'Real News',
-    text: 'The CDC has approved the updated COVID-19 booster vaccine for the 2024-2025 season. The vaccine targets the most recent variants and is recommended for everyone aged 6 months and older.',
+    label: 'ICMR Advisory (Real)',
+    text: 'ICMR and MoHFW have issued clinical protocols advising oral rehydration therapy and platelet count monitoring under physician care for dengue patients across India.',
   },
   {
-    label: 'Misleading',
-    text: '5G towers are causing coronavirus symptoms in people living nearby. Multiple studies have shown a direct link between 5G radiation and the spread of COVID-19 in urban areas.',
+    label: 'Diabetes Cure (Fake)',
+    text: 'Consuming bitter gourd (karela) juice and jamun seed powder every morning completely cures diabetes and eliminates the need for insulin injections permanently.',
+  },
+  {
+    label: 'TB Elimination (Real)',
+    text: 'The Ministry of Health and Family Welfare provides free DOTS antibiotic therapy under the Ni-kshay programme, confirming pulmonary tuberculosis is 100% curable.',
   },
 ]
 

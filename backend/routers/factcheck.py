@@ -394,34 +394,35 @@ async def fact_check(payload: FactCheckRequest):
 
 @router.get("/diseases")
 async def get_diseases():
-    """Return the list of diseases in scope with their authentic sources."""
+    """Return the list of Indian diseases in scope with their authentic sources."""
     return {
-        "scope": "COVID-19, Cancer, Diabetes, Vaccines & Immunization",
+        "scope": "National Healthcare Scope for India: Dengue, Tuberculosis (NTEP), Diabetes (ICMR-INDIAB), Cancer (Tata Memorial), COVID-19 & UIP Vaccines",
         "diseases": get_all_diseases(),
     }
 
 
 @router.get("/examples")
 async def get_examples():
-    """Get healthcare and medical misinformation example claims."""
+    """Get India-centric healthcare misinformation and clinical claims."""
     return {
         "examples": [
-            # COVID-19
-            "COVID-19 mRNA vaccines alter human DNA permanently",
-            "Drinking bleach or chlorine dioxide cures coronavirus infection",
-            "Ivermectin is an FDA-approved antiviral cure for COVID-19",
-            "5G cellular mobile networks spread coronavirus and respiratory illnesses",
-            # Cancer
-            "High doses of Vitamin C eliminate all cancerous tumors",
-            "Drinking hot water with lemon kills 100% of cancer cells",
-            "Cancer cannot be cured and chemotherapy always makes it worse",
-            # Diabetes
-            "Eating too much sugar directly causes type 2 diabetes",
-            "People with diabetes cannot eat any fruit",
-            "Cinnamon can permanently cure type 2 diabetes",
-            # Vaccines
-            "MMR vaccine causes autism spectrum disorders in children",
-            "Flu vaccine gives you the flu virus",
-            "COVID-19 vaccines contain microchips to track people",
+            # Dengue (India NVBDCP Scope)
+            "Papaya leaf juice cures dengue fever and permanently raises platelets",
+            "Drinking raw goat milk or kiwi juice eliminates dengue virus instantly",
+            # Tuberculosis (India NTEP Scope)
+            "Tuberculosis is a genetic hereditary disease that cannot be cured by antibiotics",
+            "Eating raw garlic cures pulmonary tuberculosis without DOTS medicine",
+            # Diabetes (ICMR-INDIAB Scope)
+            "Drinking Karela bitter gourd juice cures diabetes and eliminates need for insulin",
+            "Jamun seed powder completely eliminates diabetes without medication",
+            # Cancer (Tata Memorial Scope)
+            "Cow urine gomutra cures cancer tumors according to traditional healers",
+            "High doses of lemon water kill all malignant cancer cells",
+            # Vaccines & UIP (India UIP Scope)
+            "Pulse polio drops cause infertility in Indian children",
+            "Covaxin vaccines alter human DNA permanently and cause sudden heart attacks",
+            # COVID-19 (India Scope)
+            "Coronil and herbal kadha completely cure COVID-19 in seven days",
+            "Drinking hot water with turmeric kills coronavirus in the throat",
         ]
     }

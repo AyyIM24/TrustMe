@@ -1,335 +1,356 @@
 """
-disease_kb.py — Disease-Specific Knowledge Base for Authentic Fact Checking.
+disease_kb.py — India-Centric Disease Knowledge Base for Authentic Clinical Fact Checking.
 
-Contains verified medical facts sourced from WHO, CDC, NIH, and other
-authoritative health organizations. Covers the defined scope:
-    1. COVID-19
-    2. Cancer
-    3. Diabetes
-    4. Vaccines
+Contains verified medical facts and myth signals sourced from authoritative Indian and global bodies:
+    - ICMR (Indian Council of Medical Research)
+    - MoHFW (Ministry of Health and Family Welfare, Govt. of India)
+    - AIIMS New Delhi (All India Institute of Medical Sciences)
+    - Tata Memorial Centre (TMC Mumbai)
+    - National Vector Borne Disease Control Programme (NVBDCP)
+    - National TB Elimination Program (NTEP / Ni-kshay)
+    - PIB Fact Check India
+    - WHO India / South-East Asia Region (SEARO)
 
-Used by the fact-check endpoint to verify claims against authentic medical
-knowledge rather than just Wikipedia word overlap.
+Defined Disease Scope for India:
+    1. COVID-19 in India (Covaxin, Covishield, Protocols, Gomutra/Kadha myths)
+    2. Tuberculosis (NTEP DOTS, Airborne Transmission, Genetic/Herbal myths)
+    3. Dengue & Vector-Borne (NVBDCP, Platelet protocol, Papaya leaf/Goat milk myths)
+    4. Diabetes & Metabolic (ICMR-INDIAB study, Insulin, Karela/Jamun cure myths)
+    5. Cancer in India (Tata Memorial Hospital, Gutkha/Oral, Alternative cure myths)
+    6. Vaccines & Immunization (Mission Indradhanush, Pulse Polio, Infertility/Autism myths)
 """
 
+import re
 from typing import Optional, List, Dict
-
-# ─────────────────────────────────────────────────────────────────────────────
-# DISEASE KNOWLEDGE BASE
-# Each entry has:
-#   - facts: list of verified facts (True statements)
-#   - myths: list of known misinformation / false claims
-#   - keywords: used to detect which disease the claim is about
-#   - sources: authoritative source names + URLs
-# ─────────────────────────────────────────────────────────────────────────────
 
 DISEASE_KB: Dict[str, dict] = {
 
     "covid19": {
-        "display_name": "COVID-19",
+        "display_name": "COVID-19 (India Scope)",
         "keywords": [
             "covid", "covid-19", "covid19", "coronavirus", "sars-cov-2",
             "sars cov 2", "corona virus", "pandemic", "omicron", "delta variant",
-            "long covid", "post covid"
+            "long covid", "covaxin", "covishield", "coronil", "gomutra", "kadha"
         ],
         "sources": [
-            {"name": "WHO — COVID-19 Advice", "url": "https://www.who.int/emergencies/diseases/novel-coronavirus-2019/advice-for-public"},
-            {"name": "CDC — COVID-19", "url": "https://www.cdc.gov/coronavirus/2019-ncov/index.html"},
-            {"name": "NIH — COVID-19", "url": "https://www.nih.gov/coronavirus"},
+            {"name": "MoHFW — Ministry of Health & Family Welfare India", "url": "https://www.mohfw.gov.in/"},
+            {"name": "ICMR — Indian Council of Medical Research", "url": "https://www.icmr.gov.in/"},
+            {"name": "AIIMS New Delhi — Clinical Management Protocols", "url": "https://www.aiims.edu/"},
+            {"name": "PIB Fact Check India", "url": "https://factcheck.pib.gov.in/"},
+            {"name": "WHO India — COVID-19 Health Advisory", "url": "https://www.who.int/india"},
         ],
         "facts": [
-            "COVID-19 is caused by the SARS-CoV-2 virus and primarily spreads through respiratory droplets.",
-            "COVID-19 can spread through close contact with infected individuals via airborne particles.",
-            "Wearing masks reduces the transmission of COVID-19 by limiting respiratory droplet spread.",
-            "Hand hygiene and social distancing are effective measures to prevent COVID-19 spread.",
-            "Common symptoms of COVID-19 include fever, cough, fatigue, and loss of taste or smell.",
-            "COVID-19 symptoms typically appear 2 to 14 days after exposure to the virus.",
-            "Some people infected with COVID-19 are asymptomatic but can still spread the virus.",
-            "Severe COVID-19 can cause pneumonia, respiratory failure, and death in some patients.",
-            "COVID-19 vaccines approved by WHO and regulatory authorities are safe and effective.",
-            "mRNA COVID-19 vaccines do not alter or integrate into human DNA.",
-            "COVID-19 vaccines teach the immune system to recognize and fight the SARS-CoV-2 virus.",
-            "COVID-19 vaccines significantly reduce the risk of severe illness, hospitalization, and death.",
-            "Booster doses of COVID-19 vaccines help maintain immunity over time.",
-            "Antiviral medications such as Paxlovid and Remdesivir are FDA-approved for COVID-19 treatment.",
-            "Ivermectin is not an approved or proven treatment for COVID-19 by WHO or FDA.",
-            "Drinking bleach, chlorine dioxide, or household disinfectants does not cure COVID-19.",
-            "5G networks do not cause or transmit COVID-19; viruses cannot travel on radio waves.",
-            "COVID-19 is not caused by 5G towers or electromagnetic radiation.",
-            "Long COVID refers to persistent symptoms lasting weeks or months after initial COVID-19 infection.",
-            "Long COVID can affect multiple organ systems including the heart, lungs, and brain.",
+            "COVID-19 is an airborne respiratory infection caused by the SARS-CoV-2 virus, primarily spreading via aerosols and droplets.",
+            "Covaxin (inactivated virus) and Covishield (viral vector) were rigorously evaluated and approved by DCGI and MoHFW.",
+            "Approved COVID-19 vaccines do not alter, integrate into, or modify human DNA.",
+            "Cow urine (Gomutra) and cow dung do not destroy SARS-CoV-2 or protect against COVID-19, as confirmed by ICMR and AIIMS.",
+            "Coronil, herbal kadhas, and unverified traditional supplements cannot cure acute COVID-19 or replace oxygen therapy.",
+            "Drinking hot water, inhaling steam, or consuming raw garlic does not kill coronavirus inside infected lung tissue.",
+            "Wearing three-ply or N95 masks significantly limits aerosol transmission in indoor and crowded settings.",
+            "5G cellular towers and electromagnetic waves do not transmit or generate the biological SARS-CoV-2 virus.",
+            "Ivermectin and hydroxychloroquine were removed from MoHFW clinical guidelines due to lack of randomized efficacy.",
+            "Severe COVID-19 can cause acute respiratory distress syndrome (ARDS) requiring medical oxygen and corticosteroids.",
         ],
         "myths": [
             "covid vaccines alter dna",
-            "covid vaccines contain microchips",
+            "mrna vaccines alter dna",
+            "vaccines alter dna",
+            "gomutra cures covid",
+            "cow urine cures covid",
+            "coronil cures covid",
+            "drinking hot water kills coronavirus",
+            "covaxin alters dna",
+            "covishield causes heart attack",
             "5g causes covid",
             "bleach cures covid",
-            "ivermectin cures covid",
-            "covid is just a flu",
-            "masks don't work",
-            "covid vaccines are not safe",
-            "covid was made in a lab to control population",
-            "drinking hot water kills coronavirus",
             "garlic cures covid",
+            "steam inhalation kills coronavirus in lungs",
         ],
     },
 
-    "cancer": {
-        "display_name": "Cancer",
+    "tuberculosis": {
+        "display_name": "Tuberculosis (India NTEP Scope)",
         "keywords": [
-            "cancer", "tumor", "tumour", "carcinoma", "malignant", "chemotherapy",
-            "radiation therapy", "oncology", "biopsy", "metastasis", "leukemia",
-            "lymphoma", "breast cancer", "lung cancer", "colon cancer", "skin cancer"
+            "tuberculosis", "tb", "mycobacterium", "pulmonary tb", "dots",
+            "nikshay", "ni-kshay", "mdr-tb", "xdr-tb", "rifampicin", "isoniazid",
+            "bcg vaccine", "cough for two weeks", "mantoux test"
         ],
         "sources": [
-            {"name": "WHO — Cancer", "url": "https://www.who.int/news-room/fact-sheets/detail/cancer"},
-            {"name": "NIH National Cancer Institute", "url": "https://www.cancer.gov/"},
-            {"name": "American Cancer Society", "url": "https://www.cancer.org/"},
+            {"name": "Central TB Division — MoHFW (tbcindia.gov.in)", "url": "https://tbcindia.gov.in/"},
+            {"name": "ICMR National Institute for Research in Tuberculosis (NIRT)", "url": "https://www.nirt.res.in/"},
+            {"name": "AIIMS New Delhi — Department of Pulmonary Medicine", "url": "https://www.aiims.edu/"},
+            {"name": "WHO India — National TB Elimination Program", "url": "https://www.who.int/india/health-topics/tuberculosis"},
         ],
         "facts": [
-            "Cancer is a leading cause of death worldwide, accounting for nearly 10 million deaths in 2020.",
-            "Cancer arises from the transformation of normal cells into tumor cells through genetic mutations.",
-            "Common risk factors for cancer include tobacco use, alcohol consumption, obesity, and UV radiation.",
-            "About one-third of cancer deaths are due to tobacco use, high BMI, alcohol, and low fruit and vegetable intake.",
-            "Surgery, chemotherapy, radiation therapy, immunotherapy, and targeted therapy are standard cancer treatments.",
-            "Early detection of cancer significantly improves survival rates and treatment outcomes.",
-            "Some cancers can be cured, especially if detected early; treatment depends on cancer type and stage.",
-            "Chemotherapy works by killing rapidly dividing cancer cells but can also affect healthy cells.",
-            "Immunotherapy helps the immune system recognize and attack cancer cells.",
-            "Regular cancer screenings such as mammograms, colonoscopies, and Pap smears help detect cancer early.",
-            "HPV vaccination prevents infection with high-risk human papillomavirus strains that cause cervical cancer.",
-            "Hepatitis B vaccination reduces the risk of liver cancer.",
-            "Vitamin C in high doses does not eliminate cancerous tumors despite some claims.",
-            "Cancer is not contagious and cannot spread from person to person through contact.",
-            "Sugar does not directly cause cancer; however, diets high in sugar can lead to obesity, which increases cancer risk.",
-            "Baking soda does not cure cancer; no clinical evidence supports this claim.",
+            "Tuberculosis is an infectious airborne bacterial disease caused by Mycobacterium tuberculosis, not a genetic disorder.",
+            "India carries the highest global TB burden, and the Government of India provides free diagnosis and DOTS drugs via Ni-kshay.",
+            "TB is 100% curable when the full 6-to-9 month course of first-line antibiotics (Rifampicin, Isoniazid, etc.) is completed.",
+            "Stopping TB medication midway or relying on herbal remedies leads to life-threatening Multi-Drug Resistant TB (MDR-TB).",
+            "Tuberculosis cannot be cured by raw garlic, turmeric, unproven homoeopathy, or dietary tonics alone.",
+            "TB is spread through airborne droplets when an infected person coughs, sneezes, or spits; it does NOT spread by sharing food.",
+            "BCG vaccination given at birth protects Indian children from severe complications like tubercular meningitis.",
+            "A persistent cough lasting more than 2 weeks with fever and weight loss requires immediate sputum examination (CBNAAT/Truenat).",
         ],
         "myths": [
-            "vitamin c cures cancer",
-            "sugar feeds cancer",
-            "baking soda cures cancer",
-            "cancer is contagious",
-            "drinking lemon water kills cancer cells",
-            "cannabis cures cancer",
-            "alkaline water cures cancer",
-            "cancer is a fungus",
+            "tb is genetic",
+            "tb is hereditary",
+            "tuberculosis cannot be cured",
+            "eating garlic cures tb",
+            "tb spreads by sharing food",
+            "tb spreads by touching",
+            "herbal medicine cures tuberculosis",
+            "only poor people get tb",
+        ],
+    },
+
+    "dengue": {
+        "display_name": "Dengue & Vector-Borne (India NVBDCP Scope)",
+        "keywords": [
+            "dengue", "dengue fever", "aedes", "aedes aegypti", "platelets",
+            "thrombocytopenia", "papaya leaf", "goat milk", "kiwi", "ns1 antigen",
+            "dengue hemorrhagic fever", "breakbone fever", "vector borne"
+        ],
+        "sources": [
+            {"name": "NVBDCP — National Vector Borne Disease Control Programme", "url": "https://nvbdcp.gov.in/"},
+            {"name": "MoHFW — Dengue Clinical Management Guidelines", "url": "https://www.mohfw.gov.in/"},
+            {"name": "ICMR — National Institute of Malaria Research (NIMR)", "url": "https://nimr.icmr.org.in/"},
+            {"name": "AIIMS New Delhi — Emergency Medicine Guidelines", "url": "https://www.aiims.edu/"},
+        ],
+        "facts": [
+            "Dengue is a viral infection transmitted by the bite of infected female Aedes aegypti mosquitoes, which bite during daytime.",
+            "There is no direct antiviral cure for dengue; clinical care focuses on oral/intravenous fluid hydration and platelet monitoring.",
+            "While papaya leaf extract (Carica papaya) has shown modest platelet stabilization in small trials, ICMR and AIIMS confirm it is NOT a curative drug and cannot replace hospital emergency care in severe dengue.",
+            "Drinking raw goat milk or kiwi juice cannot cure dengue virus or instantly raise platelet counts; unpasteurized goat milk risks zoonotic brucellosis.",
+            "Aspirin, Ibuprofen, and NSAIDs should strictly NEVER be given in suspected dengue as they trigger fatal gastrointestinal bleeding.",
+            "Severe Dengue Hemorrhagic Fever (DHF) causes capillary leakage, plasma loss, and shock, requiring immediate intensive hospitalization.",
+            "Paracetamol is the only safe antipyretic recommended by MoHFW for managing dengue fever.",
+        ],
+        "myths": [
+            "papaya leaf juice cures dengue",
+            "goat milk cures dengue",
+            "kiwi juice cures dengue",
+            "aspirin cures dengue",
+            "brufen cures dengue",
+            "dengue spreads through drinking water",
+            "homeopathy belladonna prevents dengue",
+            "platelet count below 50000 always requires immediate transfusion",
         ],
     },
 
     "diabetes": {
-        "display_name": "Diabetes",
+        "display_name": "Diabetes & Metabolic (ICMR-INDIAB Scope)",
         "keywords": [
             "diabetes", "diabetic", "insulin", "blood sugar", "glucose", "type 1 diabetes",
-            "type 2 diabetes", "hyperglycemia", "hypoglycemia", "hba1c", "metformin",
-            "pancreas", "gestational diabetes", "pre-diabetes", "prediabetes"
+            "type 2 diabetes", "karela", "jamun", "methi", "bitter gourd", "hba1c",
+            "metformin", "icmr-indiab", "pancreas", "sugar cure"
         ],
         "sources": [
-            {"name": "WHO — Diabetes", "url": "https://www.who.int/news-room/fact-sheets/detail/diabetes"},
-            {"name": "CDC — Diabetes", "url": "https://www.cdc.gov/diabetes/"},
-            {"name": "NIH — Diabetes", "url": "https://www.niddk.nih.gov/health-information/diabetes"},
+            {"name": "ICMR-INDIAB — National Diabetes Survey & Study", "url": "https://www.icmr.gov.in/"},
+            {"name": "AIIMS New Delhi — Department of Endocrinology & Metabolism", "url": "https://www.aiims.edu/"},
+            {"name": "RSSDI — Research Society for the Study of Diabetes in India", "url": "https://www.rssdi.in/"},
+            {"name": "MoHFW National Health Portal", "url": "https://www.nhp.gov.in/disease/non-communicable-disease/diabetes"},
         ],
         "facts": [
-            "Diabetes is a chronic disease that occurs when the pancreas does not produce enough insulin or cannot use it effectively.",
-            "There were 422 million people living with diabetes worldwide as of 2014, according to WHO.",
-            "Type 1 diabetes is an autoimmune condition where the body cannot produce insulin.",
-            "Type 2 diabetes is the most common form, often associated with obesity and physical inactivity.",
-            "Gestational diabetes occurs during pregnancy and increases risk of type 2 diabetes later.",
-            "Common symptoms of diabetes include increased thirst, frequent urination, fatigue, and blurred vision.",
-            "Diabetes can cause serious complications including heart disease, kidney failure, and blindness.",
-            "Diabetic foot complications can lead to lower limb amputation if untreated.",
-            "Diabetes management includes healthy diet, physical activity, and medication such as metformin or insulin.",
-            "Regular blood glucose monitoring is essential for diabetes management.",
-            "Type 2 diabetes can often be prevented or delayed with lifestyle changes including weight loss and exercise.",
-            "A balanced diet low in refined sugars and high in fiber helps manage blood glucose levels in diabetics.",
-            "Insulin does not cause weight gain as a primary effect; weight changes depend on overall diet and lifestyle.",
-            "People with diabetes can eat fruit in moderation as part of a balanced diet.",
-            "Diabetes is not caused solely by eating too much sugar; multiple factors including genetics are involved.",
+            "The landmark ICMR-INDIAB study revealed that over 101 million Indians live with diabetes and 136 million with prediabetes.",
+            "Type 1 diabetes is an autoimmune condition where beta cells are destroyed, requiring lifelong exogenous insulin to survive.",
+            "Type 2 diabetes is a progressive metabolic condition combining insulin resistance with relative insulin deficiency.",
+            "Drinking Karela (bitter gourd) juice, Jamun seed powder, or Methi water cannot cure diabetes or substitute for prescribed insulin.",
+            "Abruptly discontinuing prescribed insulin or metformin in favor of unverified herbal churna can cause fatal Diabetic Ketoacidosis (DKA).",
+            "Diabetes is not caused solely by consuming white sugar; genetics, abdominal visceral adiposity, and physical inactivity play major roles.",
+            "People living with diabetes can safely eat whole low-glycemic fruits in controlled moderation as part of a balanced diet.",
+            "HbA1c tests measure average blood glucose over 90 days; target levels should be monitored under a certified physician's care.",
         ],
         "myths": [
-            "eating sugar causes diabetes",
+            "karela juice cures diabetes",
+            "bitter gourd juice cures diabetes",
+            "jamun powder eliminates diabetes",
+            "herbal medicine cures type 1 diabetes",
+            "diabetics should stop insulin",
+            "eating sugar directly causes diabetes",
             "diabetics cannot eat fruit",
-            "insulin is dangerous",
-            "diabetes can be cured by cinnamon",
-            "only obese people get diabetes",
-            "type 2 diabetes is not serious",
-            "diabetics should avoid all carbohydrates",
+            "cinnamon permanently cures diabetes",
+        ],
+    },
+
+    "cancer": {
+        "display_name": "Cancer in India (Tata Memorial Scope)",
+        "keywords": [
+            "cancer", "tumor", "tumour", "carcinoma", "malignant", "chemotherapy",
+            "radiation therapy", "oncology", "biopsy", "tata memorial", "tmc",
+            "oral cancer", "gutkha", "tobacco cancer", "cervical cancer", "breast cancer"
+        ],
+        "sources": [
+            {"name": "Tata Memorial Centre (TMC Mumbai)", "url": "https://tmc.gov.in/"},
+            {"name": "ICMR — National Centre for Disease Informatics and Research (NCDIR)", "url": "https://www.ncdirindia.org/"},
+            {"name": "AIIMS New Delhi — Dr. B.R. Ambedkar Institute Rotary Cancer Hospital", "url": "https://www.aiims.edu/"},
+            {"name": "WHO India — Cancer Country Profile", "url": "https://www.who.int/india/health-topics/cancer"},
+        ],
+        "facts": [
+            "Tobacco and gutkha chewing are the leading causes of head and neck cancers across India, accounting for nearly 40% of all male cancers.",
+            "Tata Memorial Hospital and ICMR emphasize that early diagnosis through screening dramatically increases 5-year survival rates.",
+            "Surgery, chemotherapy, radiotherapy, and targeted immunotherapy are the clinically proven modalities for cancer cure and remission.",
+            "Drinking cow urine (Gomutra), lemon water, or baking soda does not destroy malignant tumors; relying on them delays life-saving care.",
+            "Cancer is not a contagious disease and cannot spread from one individual to another through physical contact or sharing meals.",
+            "India's indigenously developed quadrivalent HPV vaccine (Cervavac) protects girls against high-risk strains causing cervical cancer.",
+            "High doses of Vitamin C, apricot seeds (laetrile), or alkaline water have no proven scientific efficacy in eliminating solid tumors.",
+        ],
+        "myths": [
+            "cow urine cures cancer",
+            "gomutra cures cancer",
+            "lemon water kills cancer cells",
+            "baking soda cures cancer",
+            "cancer is contagious",
+            "biopsy causes cancer to spread rapidly",
+            "sugar feeds cancer directly",
+            "alkaline diet destroys tumors",
         ],
     },
 
     "vaccines": {
-        "display_name": "Vaccines & Immunization",
+        "display_name": "Vaccines & Immunization (India UIP Scope)",
         "keywords": [
-            "vaccine", "vaccination", "immunization", "mrna", "mmr", "flu shot",
-            "booster", "adjuvant", "herd immunity", "anti-vaccine", "antivax",
-            "autism vaccine", "polio vaccine", "measles vaccine", "hpv vaccine",
-            "pfizer", "moderna", "astrazeneca", "johnson", "covaxin", "covishield"
+            "vaccine", "vaccination", "immunization", "mrna", "covaxin", "covishield",
+            "pulse polio", "mission indradhanush", "mmr", "bcg", "hpv vaccine",
+            "autism vaccine", "infertility vaccine", "uip", "adverse event"
         ],
         "sources": [
-            {"name": "WHO — Vaccines & Immunization", "url": "https://www.who.int/immunization/"},
-            {"name": "CDC — Vaccines & Immunization", "url": "https://www.cdc.gov/vaccines/"},
-            {"name": "NIH — Vaccine Research", "url": "https://www.niaid.nih.gov/research/vaccine-research-center"},
+            {"name": "MoHFW — Universal Immunization Programme (UIP)", "url": "https://www.mohfw.gov.in/"},
+            {"name": "ICMR — Vaccine Research & Immunology Division", "url": "https://www.icmr.gov.in/"},
+            {"name": "AIIMS New Delhi — Department of Paediatrics", "url": "https://www.aiims.edu/"},
+            {"name": "WHO India — Polio & Immunization Programme", "url": "https://www.who.int/india"},
         ],
         "facts": [
-            "Vaccines are among the most effective public health interventions, saving millions of lives annually.",
-            "Vaccines work by training the immune system to recognize and fight specific pathogens.",
-            "WHO recommends a schedule of vaccines to protect children and adults from preventable diseases.",
-            "Herd immunity occurs when a sufficient proportion of a population is immune, protecting those who cannot be vaccinated.",
-            "Vaccines undergo rigorous safety testing in clinical trials before regulatory approval.",
-            "Serious adverse events from vaccines are rare; benefits vastly outweigh the risks.",
-            "mRNA vaccines do not contain live virus and cannot cause the disease they protect against.",
-            "mRNA from vaccines is broken down by the body quickly and does not alter human DNA.",
-            "Vaccines do not contain microchips, tracking devices, or harmful levels of toxic substances.",
-            "The MMR vaccine does not cause autism; multiple large-scale studies have confirmed this.",
-            "The study claiming a link between MMR vaccine and autism was retracted due to scientific fraud.",
-            "The HPV vaccine prevents infections that can lead to cervical cancer and other cancers.",
-            "Flu vaccines are reformulated annually to match circulating influenza strains.",
-            "Polio vaccines have led to near eradication of polio globally.",
-            "Aluminum salts used as adjuvants in vaccines are present in quantities far below harmful levels.",
-            "Thimerosal-containing vaccines use a form of ethylmercury that is quickly eliminated from the body.",
+            "India's Universal Immunization Programme (UIP) prevents mortality from 12 vaccine-preventable childhood diseases.",
+            "The Pulse Polio Immunization Campaign successfully eliminated wild poliovirus from India, certified polio-free by WHO in 2014.",
+            "Oral polio drops (OPV) and Injectable polio vaccine (IPV) do not cause infertility or impotency in Indian children.",
+            "The MMR vaccine does not cause autism; the original fraudulent claim was retracted by The Lancet and thoroughly debunked.",
+            "Covaxin and Covishield underwent extensive multi-phase human trials evaluated by the SEC and DCGI in India.",
+            "Vaccines do not contain microchips, RFID trackers, graphene oxide toxins, or animal-derived tracking implants.",
+            "Vaccines train the human immune system to produce targeted antibodies without having to suffer the full disease itself.",
         ],
         "myths": [
+            "polio drops cause infertility",
             "vaccines cause autism",
-            "mmr causes autism",
+            "covaxin alters dna",
+            "covishield causes sudden death",
             "vaccines contain microchips",
-            "vaccines alter dna",
             "vaccines are unsafe",
-            "vaccines cause the disease",
-            "natural immunity is always better than vaccine immunity",
-            "vaccines contain harmful toxins",
-            "flu vaccine gives you flu",
-            "hpv vaccine promotes promiscuity",
+            "natural infection is safer than vaccine",
+            "pulse polio causes paralysis",
         ],
     },
 }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Helper Functions
-# ─────────────────────────────────────────────────────────────────────────────
+def detect_disease(claim_text: str) -> Optional[str]:
+    """Detect which defined Indian disease scope a claim belongs to."""
+    claim_lower = claim_text.lower()
+    
+    # Priority matching by explicit keyword frequency
+    scores: Dict[str, int] = {}
+    for disease_id, data in DISEASE_KB.items():
+        score = 0
+        for kw in data["keywords"]:
+            if re.search(r'\b' + re.escape(kw) + r'\b', claim_lower):
+                score += len(kw.split()) * 2
+            elif kw in claim_lower:
+                score += 1
+        if score > 0:
+            scores[disease_id] = score
+            
+    if scores:
+        return max(scores, key=scores.get)
+    return None
 
-def detect_disease(text: str) -> Optional[str]:
-    """
-    Detect which disease (if any) a claim is about.
-    Returns the disease key (e.g. 'covid19', 'cancer') or None.
-    """
-    text_lower = text.lower()
-    best_match = None
-    best_count = 0
 
-    for disease_key, disease_data in DISEASE_KB.items():
-        count = sum(1 for kw in disease_data["keywords"] if kw in text_lower)
-        if count > best_count:
-            best_count = count
-            best_match = disease_key
-
-    return best_match if best_count > 0 else None
-
-
-def check_against_kb(claim: str, disease_key: str) -> Dict:
-    """
-    Check a claim against the knowledge base for the detected disease.
-    Returns a structured result with verdict, supporting facts, and source URLs.
-    """
-    disease = DISEASE_KB[disease_key]
-    claim_lower = claim.lower()
-
-    STOPWORDS = {
-        "the", "a", "an", "is", "are", "was", "were", "of", "in",
-        "on", "at", "to", "and", "or", "but", "for", "with", "that",
-        "this", "by", "from", "not", "can", "do", "does", "its"
-    }
-
-    # --- Check for known myths (misinformation indicators) ---
-    myth_matches = []
-    for myth in disease["myths"]:
-        myth_words = set(myth.split()) - STOPWORDS
-        claim_words = set(claim_lower.split()) - STOPWORDS
-        overlap = myth_words & claim_words
-        if len(overlap) >= max(1, len(myth_words) * 0.6):
-            myth_matches.append(myth)
-
-    # --- Check for fact support ---
-    fact_overlap_scores = []
-    for fact in disease["facts"]:
-        fact_words = set(fact.lower().split()) - STOPWORDS
-        claim_words_set = set(claim_lower.split()) - STOPWORDS
-
-        if not claim_words_set or not fact_words:
-            continue
-
-        overlap = claim_words_set & fact_words
-        score = len(overlap) / max(len(claim_words_set), 1)
-        fact_overlap_scores.append((score, fact))
-
-    fact_overlap_scores.sort(key=lambda x: x[0], reverse=True)
-    supporting_facts = [
-        {"fact": f, "relevance": round(s * 100)}
-        for s, f in fact_overlap_scores[:3]
-        if s > 0.1
-    ]
-
-    # --- Determine verdict ---
-    has_myth_signal = len(myth_matches) > 0
-    has_fact_support = len(supporting_facts) > 0 and supporting_facts[0]["relevance"] > 20
-
-    if has_myth_signal and not has_fact_support:
-        kb_verdict = "LIKELY FALSE"
-        kb_confidence = min(85, 50 + len(myth_matches) * 15)
-        kb_explanation = (
-            f"This claim matches known {disease['display_name']} misinformation patterns "
-            f"identified by WHO/CDC/NIH. The claim aligns with debunked myths: "
-            f"'{myth_matches[0]}'."
-        )
-    elif has_myth_signal and has_fact_support:
-        kb_verdict = "MIXED / PARTIAL"
-        kb_confidence = 45
-        kb_explanation = (
-            f"This claim contains both elements consistent with verified {disease['display_name']} "
-            f"information and patterns associated with known misinformation. Verify with official sources."
-        )
-    elif has_fact_support:
-        top_score = supporting_facts[0]["relevance"]
-        if top_score >= 40:
-            kb_verdict = "LIKELY TRUE"
-            kb_confidence = min(90, 55 + top_score // 3)
-        else:
-            kb_verdict = "MIXED / PARTIAL"
-            kb_confidence = 40
-        kb_explanation = (
-            f"The claim is consistent with verified {disease['display_name']} medical knowledge "
-            f"from WHO, CDC, and NIH. The most relevant verified fact: "
-            f"\"{supporting_facts[0]['fact'][:120]}...\""
-        )
+def check_against_kb(claim_text: str, disease_id: str) -> dict:
+    """Check a claim against the authentic Indian Knowledge Base for a given disease."""
+    if disease_id not in DISEASE_KB:
+        return {"matched": False, "verdict": None, "confidence": 0, "facts": [], "myths_found": []}
+        
+    kb = DISEASE_KB[disease_id]
+    claim_lower = claim_text.lower()
+    
+    # 1. Check for known myth patterns
+    matched_myths = []
+    for myth in kb["myths"]:
+        myth_tokens = [t for t in myth.lower().split() if len(t) > 2]
+        match_count = sum(1 for t in myth_tokens if t in claim_lower)
+        if match_count >= max(2, len(myth_tokens) - 1):
+            matched_myths.append(myth)
+            
+    # 2. Check for matching verified facts
+    supporting_facts = []
+    for fact in kb["facts"]:
+        fact_tokens = [t for t in fact.lower().split() if len(t) > 3]
+        matches = sum(1 for t in fact_tokens if t in claim_lower)
+        if matches >= 2:
+            supporting_facts.append(fact)
+            
+    # Calculate verdict based on authentic medical signals
+    primary_source_names = ", ".join(s["name"].split("—")[0].strip() for s in kb["sources"][:2])
+    if matched_myths:
+        return {
+            "matched": True,
+            "disease": disease_id,
+            "disease_display": kb["display_name"],
+            "disease_name": kb["display_name"],
+            "kb_verdict": "LIKELY FALSE",
+            "verdict": "LIKELY FALSE (Known Clinical Misinformation)",
+            "kb_confidence": 92 if len(matched_myths) > 1 else 86,
+            "confidence": 92 if len(matched_myths) > 1 else 86,
+            "kb_explanation": f"Contradicts verified clinical guidance from {primary_source_names}.",
+            "myth_signal": True,
+            "myth_signals": matched_myths,
+            "matched_myths": matched_myths,
+            "supporting_facts": supporting_facts[:3] or kb["facts"][:2],
+            "authentic_sources": kb["sources"],
+        }
+    elif supporting_facts:
+        return {
+            "matched": True,
+            "disease": disease_id,
+            "disease_display": kb["display_name"],
+            "disease_name": kb["display_name"],
+            "kb_verdict": "LIKELY TRUE",
+            "verdict": "LIKELY TRUE (Clinically Consistent)",
+            "kb_confidence": 88,
+            "confidence": 88,
+            "kb_explanation": f"Consistent with verified clinical standards from {primary_source_names}.",
+            "myth_signal": False,
+            "myth_signals": [],
+            "matched_myths": [],
+            "supporting_facts": supporting_facts[:3],
+            "authentic_sources": kb["sources"],
+        }
     else:
-        kb_verdict = "UNVERIFIABLE"
-        kb_confidence = 20
-        kb_explanation = (
-            f"The claim is related to {disease['display_name']} but could not be matched to "
-            f"verified facts or known myths in our medical knowledge base. "
-            f"Please consult official health authorities."
-        )
-
-    return {
-        "disease": disease_key,
-        "disease_display": disease["display_name"],
-        "kb_verdict": kb_verdict,
-        "kb_confidence": kb_confidence,
-        "kb_explanation": kb_explanation,
-        "supporting_facts": supporting_facts,
-        "myth_signals": myth_matches[:3],
-        "authentic_sources": disease["sources"],
-    }
+        return {
+            "matched": True,
+            "disease": disease_id,
+            "disease_display": kb["display_name"],
+            "disease_name": kb["display_name"],
+            "kb_verdict": "UNVERIFIABLE",
+            "verdict": "NEEDS VERIFICATION (Within Disease Scope)",
+            "kb_confidence": 50,
+            "confidence": 50,
+            "kb_explanation": f"Claim falls under {kb['display_name']} but requires specific clinician verification.",
+            "myth_signal": False,
+            "myth_signals": [],
+            "matched_myths": [],
+            "supporting_facts": kb["facts"][:2],
+            "authentic_sources": kb["sources"],
+        }
 
 
-def get_all_diseases() -> List[Dict]:
-    """Return a summary list of all diseases in scope."""
+def get_all_diseases() -> List[dict]:
+    """Return all defined disease scopes with their display names and authentic Indian sources."""
     return [
         {
-            "key": key,
-            "display_name": data["display_name"],
-            "source_count": len(data["sources"]),
-            "fact_count": len(data["facts"]),
-            "sources": data["sources"],
+            "id": d_id,
+            "name": d_data["display_name"],
+            "sources": d_data["sources"],
+            "myths_count": len(d_data["myths"]),
+            "facts_count": len(d_data["facts"]),
         }
-        for key, data in DISEASE_KB.items()
+        for d_id, d_data in DISEASE_KB.items()
     ]

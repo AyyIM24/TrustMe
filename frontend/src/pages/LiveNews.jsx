@@ -12,31 +12,26 @@ import toast from 'react-hot-toast';
 import TrustMePulseBadge from '../components/common/TrustMePulseBadge';
 
 const CATEGORIES = [
-  { id: 'general',          label: 'Health & Medicine', icon: Globe },
-  { id: 'covid_vaccines',   label: 'COVID & Vaccines',  icon: CheckCircle },
-  { id: 'medical_research', label: 'Clinical Research', icon: Activity },
-  { id: 'public_health',    label: 'Public Health',     icon: Newspaper },
-  { id: 'wellness',         label: 'Diet & Remedies',   icon: Zap },
+  { id: 'general',            label: 'All India Health',        icon: Globe },
+  { id: 'mohfw_icmr',         label: 'ICMR, MoHFW & AIIMS',     icon: CheckCircle },
+  { id: 'endemic_tropical',   label: 'Dengue, Malaria & TB',    icon: Newspaper },
+  { id: 'diabetes_lifestyle', label: 'Diabetes & Heart India',  icon: Activity },
+  { id: 'ayush_myths',        label: 'Ayush & Herbal Myths',    icon: Zap },
 ];
 
-// Source color map
+// Indian Healthcare Source Color Map
 const SOURCE_COLORS = {
-  'BBC News': '#FF6B35',
-  'BBC Politics': '#FF6B35',
-  'BBC Health': '#FF6B35',
-  'BBC Science': '#FF6B35',
-  'BBC Sport': '#FF6B35',
-  'BBC Business': '#FF6B35',
-  'NY Times': '#00D4FF',
-  'NY Times Tech': '#00D4FF',
-  'NY Times Politics': '#00D4FF',
-  'NY Times Health': '#00D4FF',
-  'NY Times Science': '#00D4FF',
-  'NY Times Sports': '#00D4FF',
-  'NY Times Business': '#00D4FF',
-  'CNN': '#CC0033',
-  'TechCrunch': '#00FF88',
-  'Wired': '#FFB300',
+  'Google News India Health': '#1A73E8',
+  'The Hindu Health': '#0A2540',
+  'Times of India Health': '#D32F2F',
+  'ICMR & MoHFW Wire': '#008080',
+  'PIB Fact Check India': '#E65100',
+  'Vector & Infectious Diseases': '#C2185B',
+  'India TB Surveillance': '#7B1FA2',
+  'ICMR-INDIAB Diabetes & Heart': '#00796B',
+  'Times of India Lifestyle': '#C62828',
+  'Ayush & Traditional Health': '#2E7D32',
+  'India Health Myth Watch': '#D81B60',
 };
 
 const NewsCard = ({ article, onVerify, verifying }) => {
@@ -276,10 +271,10 @@ const LiveNews = () => {
                   </span>
                 )}
               </div>
-              <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">Live Healthcare & Medical Wire</h1>
+              <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">India National Healthcare & Medical Wire</h1>
               <p className="text-sm text-fs-muted mt-1">
-                Real-time medical articles and health advisories from BBC Health and NY Times Health.{' '}
-                <span className="text-fs-cyan">Click "Verify This"</span> to test any health claim against our AI model.
+                Real-time health bulletins, clinical research, and public advisories from ICMR, MoHFW, The Hindu, Times of India, and AIIMS.{' '}
+                <span className="text-fs-cyan">Click &quot;Verify This&quot;</span> to evaluate any health claim against our AI model.
               </p>
             </div>
             <button

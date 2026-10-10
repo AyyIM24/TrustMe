@@ -335,10 +335,10 @@ const FactCheck = () => {
     factCheckAPI.getExamples()
       .then(res => setExamples(res.data?.examples || res.examples || []))
       .catch(() => setExamples([
-        'COVID-19 mRNA vaccines alter human DNA permanently.',
-        'Drinking hot water with lemon kills the coronavirus in the throat.',
-        'Ivermectin is an effective prevention and cure for COVID-19 according to medical trials.',
-        'Regular physical exercise reduces the risk of severe COVID-19 hospitalisation.',
+        'Papaya leaf juice cures dengue fever and permanently raises platelets.',
+        'Drinking Karela bitter gourd juice cures diabetes and eliminates need for insulin.',
+        'Tuberculosis is a genetic hereditary disease that cannot be cured by antibiotics.',
+        'Cow urine gomutra cures cancer tumors according to traditional healers.',
       ]));
   }, []);
 

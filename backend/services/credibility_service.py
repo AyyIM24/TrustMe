@@ -98,11 +98,13 @@ def analyze_credibility(title: str, text: str, source_url: str = None) -> Dict:
 
     # ── 1. Domain Reputation ──────────────────────────────────────
     domain = extract_domain(source_url)
-    reputable_suffixes = ('.gov', '.edu', '.org', '.ac.uk', '.edu.in')
+    reputable_suffixes = ('.gov', '.edu', '.org', '.ac.uk', '.edu.in', '.gov.in', '.nic.in', '.res.in')
     trusted_domains = {
-        'reuters.com', 'apnews.com', 'bbc.com', 'bbc.co.uk', 'nytimes.com',
-        'wsj.com', 'bloomberg.com', 'wikipedia.org', 'npr.org', 'theguardian.com',
-        'politico.com', 'factcheck.org', 'snopes.com'
+        'mohfw.gov.in', 'icmr.gov.in', 'aiims.edu', 'pib.gov.in', 'tbcindia.gov.in',
+        'nvbdcp.gov.in', 'tmc.gov.in', 'thehindu.com', 'timesofindia.indiatimes.com',
+        'indianexpress.com', 'ndtv.com', 'downtoearth.org.in', 'who.int',
+        'reuters.com', 'apnews.com', 'bbc.com', 'bbc.co.uk', 'wikipedia.org',
+        'factcheck.org', 'snopes.com'
     }
     clickbait_domains = {
         'infowars.com', 'nationalenquirer.com', 'dailymail.co.uk', 'theonion.com',
@@ -112,7 +114,7 @@ def analyze_credibility(title: str, text: str, source_url: str = None) -> Dict:
     if domain:
         if domain in trusted_domains or domain.endswith(reputable_suffixes):
             domain_score = 98
-            domain_detail = f"High reputation source domain verified ({domain})"
+            domain_detail = f"High reputation medical/news authority verified ({domain})"
             domain_status = "pass"
         elif domain in clickbait_domains:
             domain_score = 20
@@ -123,12 +125,16 @@ def analyze_credibility(title: str, text: str, source_url: str = None) -> Dict:
             domain_detail = f"Generic news/information domain ({domain})"
             domain_status = "warn"
     else:
-        # Check text references
-        media_mentions = ['reuters', 'associated press', 'bbc news', 'new york times', 'guardian', 'snopes', 'factcheck.org']
+        # Check text references for authoritative Indian & global bodies
+        media_mentions = [
+            'icmr', 'mohfw', 'ministry of health', 'aiims', 'pib fact check',
+            'tata memorial', 'the hindu', 'times of india', 'indian express',
+            'ndtv', 'who', 'world health organization', 'reuters', 'associated press'
+        ]
         found_mentions = [m for m in media_mentions if m in text_lower]
         if found_mentions:
-            domain_score = 85
-            domain_detail = f"No URL provided, but cites trusted media outlet: '{found_mentions[0]}'"
+            domain_score = 90
+            domain_detail = f"No URL provided, but cites verified clinical authority: '{found_mentions[0].upper()}'"
             domain_status = "pass"
         else:
             domain_score = 50

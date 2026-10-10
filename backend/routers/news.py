@@ -4,14 +4,14 @@ from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
-import httpx
+import feedparser
 from bs4 import BeautifulSoup
 
 router = APIRouter(prefix="/news", tags=["News Feed"])
 
 # ── Simple In-Memory Cache ────────────────────────────────────────
 _cache = {}
-CACHE_TTL = 900  # 15 minutes
+CACHE_TTL = 600  # 10 minutes
 
 
 def _get_cached(key: str):
@@ -45,78 +45,80 @@ class NewsFeedResponse(BaseModel):
     cached: bool = False
 
 
-# ── RSS Feed Sources ──────────────────────────────────────────────
+# ── Indian Healthcare RSS Feed Sources ───────────────────────────
+# Scope: 100% India-centric health, medical research, and public health advisories
 
 RSS_FEEDS = {
     "general": [
-        ("https://rss.nytimes.com/services/xml/rss/nyt/Health.xml", "NY Times Health"),
-        ("https://feeds.bbci.co.uk/news/health/rss.xml", "BBC Health"),
+        ("https://news.google.com/rss/search?q=health+India&hl=en-IN&gl=IN&ceid=IN:en", "Google News India Health"),
+        ("https://www.thehindu.com/sci-tech/health/feeder/default.rss", "The Hindu Health"),
+        ("https://timesofindia.indiatimes.com/rssfeeds/2886704.cms", "Times of India Health"),
     ],
-    "covid_vaccines": [
-        ("https://rss.nytimes.com/services/xml/rss/nyt/Health.xml", "NY Times Health"),
-        ("https://feeds.bbci.co.uk/news/health/rss.xml", "BBC Health"),
+    "mohfw_icmr": [
+        ("https://news.google.com/rss/search?q=(ICMR+OR+MoHFW+OR+AIIMS)+health+India&hl=en-IN&gl=IN&ceid=IN:en", "ICMR & MoHFW Wire"),
+        ("https://news.google.com/rss/search?q=(PIB+fact+check+health+OR+Ayush+misinformation)+India&hl=en-IN&gl=IN&ceid=IN:en", "PIB Fact Check India"),
     ],
-    "medical_research": [
-        ("https://rss.nytimes.com/services/xml/rss/nyt/Science.xml", "NY Times Science & Health"),
-        ("https://feeds.bbci.co.uk/news/science_and_environment/rss.xml", "BBC Science & Medicine"),
+    "endemic_tropical": [
+        ("https://news.google.com/rss/search?q=(dengue+OR+malaria+OR+tuberculosis)+India+health&hl=en-IN&gl=IN&ceid=IN:en", "Vector & Infectious Diseases"),
+        ("https://news.google.com/rss/search?q=tuberculosis+elimination+India+NTEP&hl=en-IN&gl=IN&ceid=IN:en", "India TB Surveillance"),
     ],
-    "public_health": [
-        ("https://feeds.bbci.co.uk/news/health/rss.xml", "BBC Public Health"),
-        ("https://rss.nytimes.com/services/xml/rss/nyt/Health.xml", "NY Times Public Health"),
+    "diabetes_lifestyle": [
+        ("https://news.google.com/rss/search?q=(diabetes+OR+hypertension+OR+cardiac)+India+ICMR&hl=en-IN&gl=IN&ceid=IN:en", "ICMR-INDIAB Diabetes & Heart"),
+        ("https://news.google.com/rss/search?q=(blood+sugar+OR+heart+attack)+India+health&hl=en-IN&gl=IN&ceid=IN:en", "Times of India Lifestyle"),
     ],
-    "wellness": [
-        ("https://rss.nytimes.com/services/xml/rss/nyt/Health.xml", "NY Times Wellness & Health"),
+    "ayush_myths": [
+        ("https://news.google.com/rss/search?q=(Ayush+OR+ayurveda+OR+homeopathy+OR+herbal)+claim+health+India&hl=en-IN&gl=IN&ceid=IN:en", "Ayush & Traditional Health"),
+        ("https://news.google.com/rss/search?q=(fake+medicine+OR+counterfeit+drugs+OR+health+myth)+India&hl=en-IN&gl=IN&ceid=IN:en", "India Health Myth Watch"),
     ],
 }
 
 
-async def _parse_rss_feed(url: str, source_name: str, category: str) -> List[NewsArticle]:
-    """Fetch and parse a single RSS feed."""
+def _parse_feed_sync(url: str, source_name: str, category: str) -> List[NewsArticle]:
+    """Synchronous parsing of RSS feed via feedparser."""
     articles = []
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(url, follow_redirects=True)
-            if response.status_code != 200:
-                return articles
+        feed = feedparser.parse(url)
+        for entry in feed.entries[:12]:
+            title = getattr(entry, "title", "").strip()
+            link = getattr(entry, "link", "").strip()
+            if not title or not link:
+                continue
 
-        soup = BeautifulSoup(response.text, "html.parser")
-        items = soup.find_all("item")[:8]  # Limit per feed
+            # Strip HTML tags from description
+            raw_summary = getattr(entry, "summary", "") or getattr(entry, "description", "")
+            desc_text = ""
+            if raw_summary:
+                soup = BeautifulSoup(raw_summary, "html.parser")
+                desc_text = soup.get_text(strip=True)[:300]
 
-        for item in items:
-            title = item.find("title")
-            desc = item.find("description")
-            link = item.find("link")
-            pub_date = item.find("pubdate") or item.find("pubDate")
-
-            # Try to find image
+            # Try to find image enclosure or media
             image_url = None
-            media = item.find("media:content") or item.find("media:thumbnail")
-            if media and media.get("url"):
-                image_url = media["url"]
-            enclosure = item.find("enclosure")
-            if not image_url and enclosure and enclosure.get("url"):
-                image_url = enclosure["url"]
+            if hasattr(entry, "media_content") and entry.media_content:
+                image_url = entry.media_content[0].get("url")
+            elif hasattr(entry, "media_thumbnail") and entry.media_thumbnail:
+                image_url = entry.media_thumbnail[0].get("url")
+            elif hasattr(entry, "enclosures") and entry.enclosures:
+                image_url = entry.enclosures[0].get("href")
 
-            if title and link:
-                # Clean description HTML
-                desc_text = ""
-                if desc:
-                    desc_soup = BeautifulSoup(desc.text, "html.parser")
-                    desc_text = desc_soup.get_text(strip=True)[:300]
+            pub_date = getattr(entry, "published", None) or getattr(entry, "updated", None)
 
-                articles.append(NewsArticle(
-                    title=title.text.strip(),
-                    description=desc_text if desc_text else None,
-                    url=link.text.strip() if link.text else (link.get("href", "") or ""),
-                    image_url=image_url,
-                    source=source_name,
-                    published_at=pub_date.text.strip() if pub_date else None,
-                    category=category,
-                ))
+            articles.append(NewsArticle(
+                title=title,
+                description=desc_text if desc_text else None,
+                url=link,
+                image_url=image_url,
+                source=source_name,
+                published_at=pub_date,
+                category=category,
+            ))
     except Exception:
-        pass  # Silently skip failed feeds
-
+        pass
     return articles
+
+
+async def _parse_rss_feed(url: str, source_name: str, category: str) -> List[NewsArticle]:
+    """Fetch and parse a single RSS feed asynchronously."""
+    return await asyncio.to_thread(_parse_feed_sync, url, source_name, category)
 
 
 # ── Endpoints ─────────────────────────────────────────────────────
@@ -124,15 +126,15 @@ async def _parse_rss_feed(url: str, source_name: str, category: str) -> List[New
 @router.get("/feed", response_model=NewsFeedResponse)
 async def get_news_feed(
     category: str = Query("general", description="News category"),
-    limit: int = Query(20, ge=1, le=50),
+    limit: int = Query(24, ge=1, le=50),
 ):
-    """Get live news feed from RSS sources. No auth required."""
+    """Get live Indian healthcare news feed from RSS sources. No auth required."""
     category = category.lower()
     if category not in RSS_FEEDS:
         category = "general"
 
     # Check cache
-    cache_key = f"news_{category}"
+    cache_key = f"news_india_{category}"
     cached = _get_cached(cache_key)
     if cached:
         return NewsFeedResponse(
@@ -152,8 +154,9 @@ async def get_news_feed(
     seen_titles = set()
     for article_list in results:
         for article in article_list:
-            if article.title not in seen_titles:
-                seen_titles.add(article.title)
+            clean_title_key = article.title.lower()[:60]
+            if clean_title_key not in seen_titles:
+                seen_titles.add(clean_title_key)
                 all_articles.append(article)
 
     # Cache results
@@ -169,7 +172,7 @@ async def get_news_feed(
 
 @router.get("/categories")
 async def get_categories():
-    """Get available news categories."""
+    """Get available India-centric healthcare news categories."""
     return {
         "categories": list(RSS_FEEDS.keys())
     }

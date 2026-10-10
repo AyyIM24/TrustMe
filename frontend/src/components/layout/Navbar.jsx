@@ -18,7 +18,7 @@ const Navbar = () => {
   const navLinks = [
     { path: '/analyze',   label: 'Analyze',     icon: Search },
     { path: '/factcheck', label: 'Fact Check',   icon: FlaskConical },
-    { path: '/news',      label: 'Live News',    icon: Newspaper },
+    { path: '/news',      label: 'India Health Wire', icon: Newspaper },
     { path: '/trending',  label: 'Trending',     icon: BarChart3 },
     ...(isAuthenticated ? [{ path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard }] : []),
   ];
@@ -60,7 +60,7 @@ const Navbar = () => {
               >
                 <Icon className="w-4 h-4" />
                 {label}
-                {label === 'Live News' && (
+                {label === 'India Health Wire' && (
                   <span className="ml-0.5 w-1.5 h-1.5 rounded-full bg-fs-green animate-pulse" />
                 )}
                 {label === 'Fact Check' && (
@@ -164,7 +164,7 @@ const Navbar = () => {
                 >
                   <Icon className="w-5 h-5" />
                   {label}
-                  {label === 'Live News' && (
+                  {label === 'India Health Wire' && (
                     <span className="w-1.5 h-1.5 rounded-full bg-fs-green animate-pulse" />
                   )}
                 </Link>

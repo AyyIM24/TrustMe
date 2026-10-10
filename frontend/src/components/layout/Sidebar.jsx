@@ -19,7 +19,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { path: '/predict', label: 'TrustMe AI Scanner', icon: Zap, badge: 'PRO' },
     { path: '/analyze', label: 'Article Deep Scanner', icon: Search, badge: null },
     { path: '/factcheck', label: 'Medical Fact-Check', icon: Globe, badge: 'LIVE' },
-    { path: '/news', label: 'Health News Wire', icon: Newspaper, badge: null },
+    { path: '/news', label: 'India Health Wire', icon: Newspaper, badge: 'India' },
     { path: '/trending', label: 'Misinfo Trends', icon: Sparkles, badge: null },
     { path: '/explainability', label: 'SHAP Explainability', icon: Brain, badge: null },
     { path: '/profile', label: 'Profile & Biometrics', icon: User, badge: null },

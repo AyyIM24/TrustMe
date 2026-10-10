@@ -26,9 +26,9 @@ const PAGE_METADATA = {
     category: 'Verification',
   },
   '/news': {
-    title: 'Live Healthcare & Medical News Wire',
-    subtitle: 'Curated RSS streams from BBC Health & NY Times Medical',
-    category: 'Monitoring',
+    title: 'India National Healthcare & Medical Wire',
+    subtitle: 'Real-time clinical bulletins & advisories from ICMR, MoHFW, The Hindu & AIIMS',
+    category: 'Surveillance',
   },
   '/trending': {
     title: 'Global Health Misinformation Signals',

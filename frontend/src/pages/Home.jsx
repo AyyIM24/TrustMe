@@ -50,7 +50,7 @@ const engines = [
     icon: Globe,
     title: 'Live Fact-Check Aggregator',
     badge: 'Real-time Cross Check',
-    description: 'Query claims directly against clinical databases and verified fact-checkers like PolitiFact Health, Snopes Medical, and SciCheck.',
+    description: 'Query claims directly against authentic Indian and global health knowledge bases including ICMR, MoHFW, AIIMS, and WHO India.',
     to: '/factcheck',
     color: 'text-emerald-800',
     border: 'border-pink-300',
