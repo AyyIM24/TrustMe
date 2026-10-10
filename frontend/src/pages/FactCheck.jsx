@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, CheckCircle, XCircle, HelpCircle, AlertTriangle,
   Zap, BookOpen, ExternalLink, RefreshCw, Lightbulb,
-  ArrowRight, Sparkles
+  ArrowRight, ShieldCheck, Database, AlertOctagon, FlaskConical
 } from 'lucide-react';
 import { factCheckAPI } from '../api/client';
 import toast from 'react-hot-toast';
@@ -111,14 +111,28 @@ const ResultCard = ({ result }) => {
         <p className="text-sm text-slate-800 leading-relaxed font-medium">{result.explanation}</p>
       </div>
 
-      {/* Evidence */}
-      {result.evidence && result.evidence.length > 0 && (
+      {/* Disease Scope Badge */}
+      {result.disease_scope && (
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-mono font-bold px-3 py-1 rounded-full bg-cyan-100 border border-cyan-300 text-cyan-800 flex items-center gap-1.5">
+            <Database className="w-3 h-3" />
+            In-Scope Disease: {result.disease_scope}
+          </span>
+          <span className="text-[10px] font-mono text-slate-500">Verified against WHO / CDC / NIH</span>
+        </div>
+      )}
+
+      {/* Disease Knowledge Base Panel */}
+      {result.kb_result && <DiseaseKBPanel kbResult={result.kb_result} />}
+
+      {/* Wikipedia Evidence */}
+      {result.evidence && result.evidence.filter(ev => ev.source.startsWith('Wikipedia')).length > 0 && (
         <div className="space-y-2.5">
           <p className="text-xs font-mono font-bold text-pink-800 uppercase tracking-widest flex items-center gap-1.5">
-            <BookOpen className="w-3.5 h-3.5 text-teal-700" /> Reference Sources
+            <BookOpen className="w-3.5 h-3.5 text-teal-700" /> Wikipedia References
           </p>
           <div className="space-y-2">
-            {result.evidence.map((ev, i) => (
+            {result.evidence.filter(ev => ev.source.startsWith('Wikipedia')).map((ev, i) => (
               <div key={i} className="bg-[#C8E4FA] rounded-2xl border border-pink-300 p-4 space-y-2 shadow-sm hover:shadow-md hover:border-pink-400 transition-all">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <span className="text-xs font-mono font-bold text-cyan-800 bg-[#D6EBFC] border border-pink-300 px-3 py-1 rounded-full shadow-sm">
@@ -156,8 +170,106 @@ const ResultCard = ({ result }) => {
 
       {/* Disclaimer */}
       <p className="text-xs text-slate-500 font-mono">
-        ⚠ This is AI-assisted verification using Wikipedia & clinical references. Always cross-check with authoritative healthcare providers.
+        ⚠ AI-assisted verification using WHO/CDC/NIH Knowledge Base + Wikipedia. Always consult a qualified healthcare provider.
       </p>
+    </motion.div>
+  );
+};
+
+// ── Disease KB Panel ─────────────────────────────────────────────
+const DiseaseKBPanel = ({ kbResult }) => {
+  if (!kbResult) return null;
+
+  const verdictColors = {
+    'LIKELY TRUE': 'text-emerald-800 bg-emerald-50 border-emerald-300',
+    'LIKELY FALSE': 'text-rose-800 bg-rose-50 border-rose-300',
+    'MIXED / PARTIAL': 'text-amber-800 bg-amber-50 border-amber-300',
+    'UNVERIFIABLE': 'text-cyan-800 bg-[#D6EBFC] border-pink-300',
+  };
+  const badgeClass = verdictColors[kbResult.kb_verdict] || verdictColors['UNVERIFIABLE'];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.15 }}
+      className="rounded-2xl border border-cyan-300 bg-[#EAF6FF] p-5 space-y-4 shadow-sm"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-cyan-100 border border-cyan-300">
+            <Database className="w-4 h-4 text-cyan-700" />
+          </div>
+          <div>
+            <p className="text-[10px] font-mono font-bold text-cyan-700 uppercase tracking-widest">Disease Knowledge Base</p>
+            <p className="text-xs font-bold text-slate-800">{kbResult.disease_display} — WHO / CDC / NIH</p>
+          </div>
+        </div>
+        <span className={`text-[10px] font-mono font-bold px-3 py-1 rounded-full border ${badgeClass}`}>
+          KB: {kbResult.kb_verdict}
+        </span>
+      </div>
+
+      {/* KB Explanation */}
+      <p className="text-xs text-slate-700 leading-relaxed bg-white/60 rounded-xl p-3 border border-cyan-200">
+        {kbResult.kb_explanation}
+      </p>
+
+      {/* Myth Signals */}
+      {kbResult.myth_signals && kbResult.myth_signals.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[10px] font-mono font-bold text-rose-700 uppercase tracking-wider flex items-center gap-1">
+            <AlertOctagon className="w-3 h-3" /> Misinformation Patterns Detected
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {kbResult.myth_signals.map((myth, i) => (
+              <span key={i} className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700">
+                ✕ {myth}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Supporting Facts */}
+      {kbResult.supporting_facts && kbResult.supporting_facts.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[10px] font-mono font-bold text-emerald-700 uppercase tracking-wider flex items-center gap-1">
+            <ShieldCheck className="w-3 h-3" /> Verified Facts from Medical KB
+          </p>
+          <div className="space-y-1.5">
+            {kbResult.supporting_facts.map((sf, i) => (
+              <div key={i} className="flex items-start gap-2 text-xs text-slate-700 bg-emerald-50/80 rounded-lg p-2.5 border border-emerald-200">
+                <span className="text-emerald-600 font-bold flex-shrink-0">✓</span>
+                <span className="leading-relaxed">{sf.fact}</span>
+                <span className="ml-auto text-[10px] font-mono text-emerald-600 flex-shrink-0 font-bold">{sf.relevance}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Authentic Sources */}
+      <div className="space-y-1.5">
+        <p className="text-[10px] font-mono font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1">
+          <FlaskConical className="w-3 h-3" /> Authentic Medical Sources
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {kbResult.authentic_sources.map((src, i) => (
+            <a
+              key={i}
+              href={src.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-[10px] font-mono font-bold text-cyan-800 bg-[#D6EBFC] border border-cyan-300 px-3 py-1.5 rounded-full hover:bg-cyan-100 hover:border-cyan-400 transition-all"
+            >
+              <ExternalLink className="w-2.5 h-2.5" />
+              {src.name}
+            </a>
+          ))}
+        </div>
+      </div>
     </motion.div>
   );
 };
@@ -165,10 +277,11 @@ const ResultCard = ({ result }) => {
 // ── Loading Skeleton ──────────────────────────────────────────────
 const CheckingAnimation = ({ claim }) => {
   const steps = [
-    'Extracting key entities...',
-    'Searching Wikipedia...',
-    'Analyzing evidence...',
-    'Computing verdict...',
+    'Detecting disease scope (COVID-19, Cancer, Diabetes, Vaccines)...',
+    'Checking WHO/CDC/NIH knowledge base...',
+    'Searching Wikipedia for additional evidence...',
+    'Cross-referencing authentic sources...',
+    'Computing final verdict...',
   ];
   const [step, setStep] = useState(0);
 
@@ -391,9 +504,9 @@ const FactCheck = () => {
             className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 text-left"
           >
             {[
-              { step: '01', title: 'Extract Entities', desc: 'Key medical entities, symptoms, and therapies are extracted from the claim.' },
-              { step: '02', title: 'Clinical Literature Query', desc: 'The system queries medical repositories for relevant peer-reviewed information.' },
-              { step: '03', title: 'Score & Clinical Verdict', desc: 'Attribution overlap scoring and consistency checks yield the final veracity verdict.' },
+              { step: '01', title: 'Detect Disease Scope', desc: 'The system detects if the claim is about COVID-19, Cancer, Diabetes, or Vaccines — our defined project scope.' },
+              { step: '02', title: 'WHO/CDC/NIH Knowledge Base', desc: 'Claims are checked against verified medical facts and known myth patterns from WHO, CDC, and NIH.' },
+              { step: '03', title: 'Wikipedia + Verdict', desc: 'Additional Wikipedia evidence is gathered. Both signals are combined to give a final veracity verdict with source links.' },
             ].map(({ step, title, desc }) => (
               <div key={step} className="bg-[#D6EBFC]/95 border border-pink-300 rounded-2xl p-5 space-y-2 shadow-card-soft hover:shadow-card-hover hover:border-pink-400 hover:-translate-y-1 transition-all duration-300">
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 via-teal-400 to-emerald-500 flex items-center justify-center text-white font-mono font-bold text-xs shadow-sm shadow-cyan-500/20">

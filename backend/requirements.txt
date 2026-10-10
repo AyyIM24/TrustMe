@@ -16,3 +16,4 @@ numpy
 pydantic-settings
 feedparser
 slowapi
+curl_cffi

@@ -84,9 +84,10 @@ async def analyze_url(
     try:
         scraped = await scrape_article(payload.url)
     except Exception as e:
+        error_msg = str(e) if isinstance(e, ValueError) else f"Unable to fetch article from this URL ({str(e)}). You can copy the headline or article text and use the 'Text Input' tab."
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Failed to scrape URL: {str(e)}"
+            detail=error_msg
         )
 
     if not scraped["text"] or len(scraped["text"].strip()) < 10:

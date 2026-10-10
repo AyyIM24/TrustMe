@@ -1,3 +1,13 @@
+"""
+factcheck.py — Fact-Check Router with Disease-Specific Knowledge Base.
+
+Verifies claims against:
+1. Disease Knowledge Base (WHO/CDC/NIH verified facts for COVID-19, Cancer, Diabetes, Vaccines)
+2. Wikipedia (general knowledge fallback)
+
+Scope: COVID-19, Cancer, Diabetes, Vaccines & Immunization
+"""
+
 import re
 import asyncio
 from typing import Optional, List
@@ -5,17 +15,39 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 import httpx
 
+# Import disease knowledge base
+from services.disease_kb import detect_disease, check_against_kb, get_all_diseases
+
 router = APIRouter(prefix="/factcheck", tags=["Fact Check"])
+
 
 # ── Schemas ───────────────────────────────────────────────────────
 
 class FactCheckRequest(BaseModel):
     claim: str
 
+
 class EvidenceItem(BaseModel):
     source: str
     snippet: str
     url: Optional[str] = None
+
+
+class AuthenticSource(BaseModel):
+    name: str
+    url: str
+
+
+class KBResult(BaseModel):
+    disease: str
+    disease_display: str
+    kb_verdict: str
+    kb_confidence: int
+    kb_explanation: str
+    supporting_facts: list
+    myth_signals: list
+    authentic_sources: List[AuthenticSource]
+
 
 class FactCheckResponse(BaseModel):
     claim: str
@@ -25,6 +57,8 @@ class FactCheckResponse(BaseModel):
     explanation: str
     evidence: List[EvidenceItem]
     searched_topics: List[str]
+    kb_result: Optional[KBResult] = None   # Disease KB check result
+    disease_scope: Optional[str] = None    # Detected disease (or None)
 
 
 # ── Wikipedia API Helper ──────────────────────────────────────────
@@ -32,12 +66,12 @@ class FactCheckResponse(BaseModel):
 WIKI_API = "https://en.wikipedia.org/api/rest_v1/page/summary/"
 WIKI_SEARCH = "https://en.wikipedia.org/w/api.php"
 
+
 async def search_wikipedia(query: str) -> Optional[dict]:
     """Search Wikipedia for a query and return the best match summary."""
     headers = {"User-Agent": "HealthGuardMedicalFactChecker/1.0 (contact@healthguard.ai; educational research)"}
     async with httpx.AsyncClient(timeout=8.0, headers=headers) as client:
         try:
-            # Step 1: Search for page title
             search_resp = await client.get(WIKI_SEARCH, params={
                 "action": "query",
                 "list": "search",
@@ -46,15 +80,12 @@ async def search_wikipedia(query: str) -> Optional[dict]:
                 "srlimit": 3,
             })
             if search_resp.status_code != 200:
-                print(f"[WIKI] Search failed for '{query}': {search_resp.status_code}")
                 return None
             search_data = search_resp.json()
             results = search_data.get("query", {}).get("search", [])
             if not results:
-                print(f"[WIKI] No search results for '{query}'")
                 return None
 
-            # Clean HTML from snippets
             clean_snippets = []
             for r in results:
                 raw_snip = r.get("snippet", "")
@@ -63,13 +94,9 @@ async def search_wikipedia(query: str) -> Optional[dict]:
                 if clean_snip:
                     clean_snippets.append(clean_snip.strip())
 
-            # Step 2: Get page summary for the best result
             title = results[0]["title"]
             summary_url = f"{WIKI_API}{title.replace(' ', '_')}"
-            summary_resp = await client.get(
-                summary_url,
-                headers={"Accept": "application/json"}
-            )
+            summary_resp = await client.get(summary_url, headers={"Accept": "application/json"})
             if summary_resp.status_code == 200:
                 data = summary_resp.json()
                 return {
@@ -79,8 +106,6 @@ async def search_wikipedia(query: str) -> Optional[dict]:
                     "snippets": clean_snippets,
                 }
             else:
-                print(f"[WIKI] Summary API status {summary_resp.status_code} for page '{title}'")
-                # Fallback to search snippets only if summary call failed
                 return {
                     "title": title,
                     "summary": " ".join(clean_snippets[:2]),
@@ -89,8 +114,6 @@ async def search_wikipedia(query: str) -> Optional[dict]:
                 }
         except Exception as e:
             print(f"[WIKI] Error searching Wikipedia for '{query}': {e}")
-            import traceback
-            traceback.print_exc()
     return None
 
 
@@ -108,18 +131,16 @@ def extract_numbers(text: str) -> List[str]:
 
 def word_overlap_score(claim: str, evidence: str) -> float:
     """Calculate what fraction of claim keywords appear in evidence."""
-    # Remove common stop words
-    stopwords = {'the','a','an','is','are','was','were','of','in','on','at','to',
-                 'and','or','but','for','with','has','had','have','been','by','from',
-                 'that','this','which','who','he','she','it','they','we','i',
-                 'did','does','do','not','no','be','as','its','his','her','their'}
-    
+    stopwords = {
+        'the', 'a', 'an', 'is', 'are', 'was', 'were', 'of', 'in', 'on', 'at', 'to',
+        'and', 'or', 'but', 'for', 'with', 'has', 'had', 'have', 'been', 'by', 'from',
+        'that', 'this', 'which', 'who', 'he', 'she', 'it', 'they', 'we', 'i',
+        'did', 'does', 'do', 'not', 'no', 'be', 'as', 'its', 'his', 'her', 'their'
+    }
     claim_words = set(re.findall(r'\b[a-zA-Z0-9]+\b', claim.lower())) - stopwords
     evidence_words = set(re.findall(r'\b[a-zA-Z0-9]+\b', evidence.lower()))
-    
     if not claim_words:
         return 0.0
-    
     overlap = claim_words & evidence_words
     return len(overlap) / len(claim_words)
 
@@ -128,59 +149,64 @@ def check_number_consistency(claim: str, evidence: str) -> Optional[bool]:
     """Check if numbers in the claim match numbers in the evidence."""
     claim_nums = set(extract_numbers(claim))
     evidence_nums = set(extract_numbers(evidence))
-    
     if not claim_nums:
-        return None  # No numbers to check
-    
-    # Check if claim numbers appear in evidence
+        return None
     overlap = claim_nums & evidence_nums
     if overlap:
-        return True  # Numbers are consistent
+        return True
     elif claim_nums and evidence_nums:
-        return False  # Different numbers present
+        return False
     return None
 
 
 def extract_key_topics(claim: str) -> List[str]:
     """Extract likely Wikipedia search topics from a claim."""
-    # Remove common verbs and filler words
     filler = r'\b(won|win|wins|losing|lost|is|are|was|were|has|have|had|did|does|said|says|claims|reported|confirmed|allegedly|according)\b'
     cleaned = re.sub(filler, '', claim, flags=re.IGNORECASE).strip()
-    
-    # Extract proper nouns (words starting with capital letters, ignoring sentence start)
     words = claim.split()
     proper_nouns = []
     for i, w in enumerate(words):
         w_clean = re.sub(r'[^a-zA-Z]', '', w)
         if w_clean and w_clean[0].isupper() and i > 0:
             proper_nouns.append(w_clean)
-    
-    # Build search queries
     queries = []
     if proper_nouns:
         queries.append(' '.join(proper_nouns[:3]))
-    queries.append(claim[:80])  # Full claim trimmed
-    
-    # Remove duplicates
+    queries.append(claim[:80])
     return list(dict.fromkeys(queries))
 
 
-# ── Main Fact Check Logic ─────────────────────────────────────────
+# ── Main Fact Check Endpoint ──────────────────────────────────────
 
 @router.post("/check", response_model=FactCheckResponse)
 async def fact_check(payload: FactCheckRequest):
-    """Check a factual claim against Wikipedia and knowledge sources."""
+    """
+    Verify a health claim against:
+    1. Disease-specific Knowledge Base (WHO/CDC/NIH — COVID-19, Cancer, Diabetes, Vaccines)
+    2. Wikipedia (general fallback)
+    """
     claim = payload.claim.strip()
     if len(claim) < 5:
         raise HTTPException(status_code=400, detail="Claim is too short to verify")
     if len(claim) > 500:
         raise HTTPException(status_code=400, detail="Claim is too long (max 500 chars)")
 
+    # ── Step 1: Check Disease Knowledge Base ─────────────────────
+    detected_disease = detect_disease(claim)
+    kb_result_data = None
+    kb_verdict = None
+    kb_confidence = 0
+
+    if detected_disease:
+        kb_result_data = check_against_kb(claim, detected_disease)
+        kb_verdict = kb_result_data["kb_verdict"]
+        kb_confidence = kb_result_data["kb_confidence"]
+
+    # ── Step 2: Wikipedia Search ──────────────────────────────────
     topics = extract_key_topics(claim)
     evidence_items = []
     all_summaries = []
 
-    # Search Wikipedia for each extracted topic
     search_tasks = [search_wikipedia(topic) for topic in topics[:2]]
     wiki_results = await asyncio.gather(*search_tasks)
 
@@ -190,8 +216,7 @@ async def fact_check(payload: FactCheckRequest):
                 all_summaries.append(result["summary"])
             if result.get("snippets"):
                 all_summaries.extend(result["snippets"])
-            
-            # Find the best snippet from either the summary or search snippets
+
             sentences = result["summary"].split('. ') if result.get("summary") else []
             candidates = sentences + result.get("snippets", [])
             best_snippet = ""
@@ -214,95 +239,189 @@ async def fact_check(payload: FactCheckRequest):
                     url=result.get("url")
                 ))
 
-    # ── Scoring Logic ────────────────────────────────────────────
+    # Add KB authentic sources as evidence items
+    if kb_result_data:
+        for src in kb_result_data["authentic_sources"][:2]:
+            evidence_items.append(EvidenceItem(
+                source=src["name"],
+                snippet=kb_result_data["kb_explanation"][:200],
+                url=src["url"]
+            ))
+
+    # ── Step 3: Combine KB + Wikipedia Signals ───────────────────
     combined_evidence = " ".join(all_summaries)
-    
-    if not combined_evidence:
-        return FactCheckResponse(
-            claim=claim,
-            verdict="UNVERIFIABLE",
-            verdict_color="amber",
-            confidence=0,
-            explanation="Could not find relevant information in Wikipedia to verify this claim. This may be about a very recent event, a niche topic, or a fictional statement.",
-            evidence=[],
-            searched_topics=topics,
+
+    if kb_verdict and kb_confidence > 0:
+        # KB is primary signal for in-scope diseases
+        if kb_verdict == "LIKELY FALSE":
+            final_verdict = "LIKELY FALSE"
+            final_color = "red"
+            final_confidence = kb_confidence
+            explanation = (
+                f"[{kb_result_data['disease_display']} Knowledge Base — WHO/CDC/NIH] "
+                f"{kb_result_data['kb_explanation']}"
+            )
+            if kb_result_data.get("myth_signals"):
+                explanation += f" Debunked myth pattern matched: '{kb_result_data['myth_signals'][0]}'."
+
+        elif kb_verdict == "LIKELY TRUE":
+            final_verdict = "LIKELY TRUE"
+            final_color = "green"
+            final_confidence = kb_confidence
+            explanation = (
+                f"[{kb_result_data['disease_display']} Knowledge Base — WHO/CDC/NIH] "
+                f"{kb_result_data['kb_explanation']}"
+            )
+
+        elif kb_verdict == "MIXED / PARTIAL":
+            final_verdict = "MIXED / PARTIAL"
+            final_color = "cyan"
+            final_confidence = kb_confidence
+            explanation = (
+                f"[{kb_result_data['disease_display']} Knowledge Base — WHO/CDC/NIH] "
+                f"{kb_result_data['kb_explanation']}"
+            )
+
+        else:  # UNVERIFIABLE from KB — fall back to Wikipedia
+            if not combined_evidence:
+                final_verdict = "UNVERIFIABLE"
+                final_color = "amber"
+                final_confidence = 0
+                explanation = (
+                    f"[{kb_result_data['disease_display']}] Could not find a match in the "
+                    f"WHO/CDC/NIH knowledge base or Wikipedia for this claim. "
+                    f"Please consult an official medical authority."
+                )
+            else:
+                # Wikipedia fallback scoring
+                best_snippet_overlap = max(
+                    (word_overlap_score(claim, ev.snippet) for ev in evidence_items if "Wikipedia" in ev.source),
+                    default=0.0
+                )
+                overall_overlap = word_overlap_score(claim, combined_evidence)
+                overlap = 0.7 * best_snippet_overlap + 0.3 * overall_overlap if best_snippet_overlap >= 0.65 else best_snippet_overlap
+                base_score = int(overlap * 100)
+                if best_snippet_overlap < 0.65:
+                    base_score = max(5, base_score - 20)
+                final_confidence = max(10, min(80, base_score))
+                if final_confidence >= 60:
+                    final_verdict = "LIKELY TRUE"
+                    final_color = "green"
+                elif final_confidence >= 35:
+                    final_verdict = "MIXED / PARTIAL"
+                    final_color = "cyan"
+                else:
+                    final_verdict = "LIKELY FALSE"
+                    final_color = "red"
+                explanation = (
+                    f"[{kb_result_data['disease_display']}] Not directly matched in WHO/CDC knowledge base. "
+                    f"Wikipedia indicates {int(overlap * 100)}% keyword overlap with reference material."
+                )
+
+    elif combined_evidence:
+        # Non-disease topic: pure Wikipedia scoring
+        best_snippet_overlap = max(
+            (word_overlap_score(claim, ev.snippet) for ev in evidence_items),
+            default=0.0
+        )
+        overall_overlap = word_overlap_score(claim, combined_evidence)
+        num_consistent = check_number_consistency(claim, combined_evidence)
+        overlap = 0.7 * best_snippet_overlap + 0.3 * overall_overlap if best_snippet_overlap >= 0.65 else best_snippet_overlap
+        base_score = int(overlap * 100)
+        if best_snippet_overlap < 0.65:
+            base_score = max(5, base_score - 20)
+        num_note = ""
+        if num_consistent is True:
+            base_score = min(95, base_score + 20)
+            num_note = "Numbers in the claim are consistent with Wikipedia data. "
+        elif num_consistent is False:
+            base_score = max(5, base_score - 30)
+            num_note = "Numbers in the claim differ from Wikipedia data. "
+        final_confidence = max(10, min(92, base_score))
+        if not evidence_items:
+            final_verdict = "UNVERIFIABLE"
+            final_color = "amber"
+            explanation = f"Found Wikipedia articles on related topics but couldn't extract a direct match. {num_note}Please verify with a primary source."
+        elif final_confidence >= 60:
+            final_verdict = "LIKELY TRUE"
+            final_color = "green"
+            explanation = f"{num_note}The key claims appear to be supported by Wikipedia. {int(overlap * 100)}% of claim keywords match the reference sources."
+        elif final_confidence >= 35:
+            final_verdict = "MIXED / PARTIAL"
+            final_color = "cyan"
+            explanation = f"{num_note}The claim partially matches Wikipedia content, but some details could not be fully verified."
+        else:
+            final_verdict = "LIKELY FALSE"
+            final_color = "red"
+            explanation = f"{num_note}The claim has low overlap ({int(overlap * 100)}%) with Wikipedia reference material."
+
+    else:
+        final_verdict = "UNVERIFIABLE"
+        final_color = "amber"
+        final_confidence = 0
+        explanation = (
+            "Could not find relevant information to verify this claim. "
+            "This may be about a very recent event or a topic outside our knowledge base. "
+            "Please consult WHO, CDC, or NIH directly."
         )
 
-    # Calculate best snippet overlap
-    best_snippet_overlap = 0.0
-    if evidence_items:
-        best_snippet_overlap = max(word_overlap_score(claim, ev.snippet) for ev in evidence_items)
-    
-    overall_overlap = word_overlap_score(claim, combined_evidence)
-    
-    # Prioritize single-sentence support to avoid false positives from unrelated text chunks
-    if best_snippet_overlap >= 0.65:
-        overlap = 0.7 * best_snippet_overlap + 0.3 * overall_overlap
-    else:
-        overlap = best_snippet_overlap
-
-    num_consistent = check_number_consistency(claim, combined_evidence)
-
-    # Scoring heuristics
-    base_score = int(overlap * 100)
-
-    # Penalize if no single sentence has high overlap (suggests entities are unrelated)
-    if best_snippet_overlap < 0.65:
-        base_score = max(5, base_score - 20)
-
-    # Adjust based on number consistency
-    if num_consistent is True:
-        base_score = min(95, base_score + 20)
-        num_note = "Numbers in the claim are consistent with Wikipedia data. "
-    elif num_consistent is False:
-        base_score = max(5, base_score - 30)
-        num_note = "⚠ Numbers in the claim differ from Wikipedia data. "
-    else:
-        num_note = ""
-
-    # Clamp
-    confidence = max(10, min(92, base_score))
-
-    # Determine verdict
-    if not evidence_items:
-        verdict = "UNVERIFIABLE"
-        verdict_color = "amber"
-        explanation = f"Found Wikipedia articles on related topics but couldn't extract a direct match for this specific claim. {num_note}Please verify with a primary source."
-    elif confidence >= 60:
-        verdict = "LIKELY TRUE"
-        verdict_color = "green"
-        explanation = f"{num_note}The key claims appear to be supported by Wikipedia. {int(overlap*100)}% of claim keywords match the reference sources. Always verify with official records."
-    elif confidence >= 35:
-        verdict = "MIXED / PARTIAL"
-        verdict_color = "cyan"
-        explanation = f"{num_note}The claim partially matches Wikipedia content, but some details could not be fully verified. The core subject exists but specific claims may be inaccurate."
-    else:
-        verdict = "LIKELY FALSE"
-        verdict_color = "red"
-        explanation = f"{num_note}The claim has low overlap ({int(overlap*100)}%) with Wikipedia reference material on this topic. Key facts appear to contradict or not appear in authoritative sources."
+    # Build KB result for response
+    kb_response = None
+    if kb_result_data:
+        kb_response = KBResult(
+            disease=kb_result_data["disease"],
+            disease_display=kb_result_data["disease_display"],
+            kb_verdict=kb_result_data["kb_verdict"],
+            kb_confidence=kb_result_data["kb_confidence"],
+            kb_explanation=kb_result_data["kb_explanation"],
+            supporting_facts=kb_result_data["supporting_facts"],
+            myth_signals=kb_result_data["myth_signals"],
+            authentic_sources=[AuthenticSource(**s) for s in kb_result_data["authentic_sources"]],
+        )
 
     return FactCheckResponse(
         claim=claim,
-        verdict=verdict,
-        verdict_color=verdict_color,
-        confidence=confidence,
+        verdict=final_verdict,
+        verdict_color=final_color,
+        confidence=final_confidence,
         explanation=explanation,
         evidence=evidence_items,
         searched_topics=topics,
+        kb_result=kb_response,
+        disease_scope=kb_result_data["disease_display"] if kb_result_data else None,
     )
+
+
+@router.get("/diseases")
+async def get_diseases():
+    """Return the list of diseases in scope with their authentic sources."""
+    return {
+        "scope": "COVID-19, Cancer, Diabetes, Vaccines & Immunization",
+        "diseases": get_all_diseases(),
+    }
+
 
 @router.get("/examples")
 async def get_examples():
     """Get healthcare and medical misinformation example claims."""
     return {
         "examples": [
+            # COVID-19
             "COVID-19 mRNA vaccines alter human DNA permanently",
             "Drinking bleach or chlorine dioxide cures coronavirus infection",
             "Ivermectin is an FDA-approved antiviral cure for COVID-19",
-            "High doses of Vitamin C eliminate all cancerous tumors",
-            "MMR vaccine causes autism spectrum disorders in children",
-            "Drinking hot water with lemon kills 100% of cancer cells",
             "5G cellular mobile networks spread coronavirus and respiratory illnesses",
-            "Antibiotics are effective in treating viral infections like the flu",
+            # Cancer
+            "High doses of Vitamin C eliminate all cancerous tumors",
+            "Drinking hot water with lemon kills 100% of cancer cells",
+            "Cancer cannot be cured and chemotherapy always makes it worse",
+            # Diabetes
+            "Eating too much sugar directly causes type 2 diabetes",
+            "People with diabetes cannot eat any fruit",
+            "Cinnamon can permanently cure type 2 diabetes",
+            # Vaccines
+            "MMR vaccine causes autism spectrum disorders in children",
+            "Flu vaccine gives you the flu virus",
+            "COVID-19 vaccines contain microchips to track people",
         ]
     }

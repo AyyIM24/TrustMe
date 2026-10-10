@@ -47,7 +47,7 @@ const Analyze = () => {
     } catch (err) {
       setIsLoading(false);
       const msg = err.response?.data?.detail || 'Scraping failed. Make sure it is a valid news article URL.';
-      toast.error(msg);
+      toast.error(msg, { duration: 5000 });
     }
   };
 
