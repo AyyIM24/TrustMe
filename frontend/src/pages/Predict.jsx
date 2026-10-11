@@ -1,82 +1,85 @@
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Search, AlertTriangle, CheckCircle, Loader2, ArrowRight, RotateCcw, Sparkles } from 'lucide-react'
-import { predictNews, getMetrics } from '../api'
-import TrustMePulseBadge from '../components/common/TrustMePulseBadge'
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Search, AlertTriangle, CheckCircle, HelpCircle, Compass,
+  Loader2, RotateCcw, ChevronDown, ChevronUp, Layers, Sparkles
+} from 'lucide-react';
+import { analyzeAPI } from '../api/client';
+import EvidencePanel from '../components/analyze/EvidencePanel';
+import TrustMePulseBadge from '../components/common/TrustMePulseBadge';
 
 const sampleTexts = [
   {
-    label: 'Dengue Myth (Fake)',
+    label: 'Sample: Dengue myth',
     text: 'Drinking boiled papaya leaf juice and raw goat milk cures dengue fever and permanently restores platelets without hospital admission.',
   },
   {
-    label: 'ICMR Advisory (Real)',
-    text: 'ICMR and MoHFW have issued clinical protocols advising oral rehydration therapy and platelet count monitoring under physician care for dengue patients across India.',
+    label: 'Sample: COVID-19 guidance',
+    text: 'Coronavirus disease (COVID-19) is an infectious disease caused by the SARS-CoV-2 virus.',
   },
   {
-    label: 'Diabetes Cure (Fake)',
+    label: 'Sample: Diabetes cure claim',
     text: 'Consuming bitter gourd (karela) juice and jamun seed powder every morning completely cures diabetes and eliminates the need for insulin injections permanently.',
   },
   {
-    label: 'TB Elimination (Real)',
-    text: 'The Ministry of Health and Family Welfare provides free DOTS antibiotic therapy under the Ni-kshay programme, confirming pulmonary tuberculosis is 100% curable.',
+    label: 'Sample: Out-of-scope economics',
+    text: 'The Reserve Bank of India raised repo interest rates by twenty-five basis points to curb quarterly inflation.',
   },
-]
+  {
+    label: 'Sample: Dengue protocol',
+    text: 'ICMR and MoHFW have issued clinical protocols advising oral rehydration therapy and platelet count monitoring under physician care for dengue patients across India.',
+  },
+];
 
 export default function Predict() {
-  const [text, setText] = useState('')
-  const [model, setModel] = useState('baseline')
-  const [availableModels, setAvailableModels] = useState(['baseline'])
-  const [result, setResult] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-
-  useEffect(() => {
-    getMetrics()
-      .then((data) => {
-        if (data?.available_models && Array.isArray(data.available_models)) {
-          setAvailableModels(data.available_models)
-        }
-      })
-      .catch(() => {})
-  }, [])
+  const [text, setText] = useState('');
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [styleSignalOpen, setStyleSignalOpen] = useState(false);
 
   const handlePredict = async () => {
-    if (!text.trim()) return
+    if (!text.trim()) return;
 
-    setLoading(true)
-    setError(null)
-    setResult(null)
+    setLoading(true);
+    setError(null);
+    setResult(null);
 
     try {
-      const data = await predictNews(text, model)
-      setResult(data)
+      const res = await analyzeAPI.analyzeText({ text });
+      setResult(res.data);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to get prediction. Please try again.')
+      setError(err.response?.data?.detail || 'Failed to verify claim. Please try again.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleReset = () => {
-    setText('')
-    setResult(null)
-    setError(null)
-  }
+    setText('');
+    setResult(null);
+    setError(null);
+  };
 
   const handleSample = (sampleText) => {
-    setText(sampleText)
-    setResult(null)
-    setError(null)
-  }
+    setText(sampleText);
+    setResult(null);
+    setError(null);
+  };
 
-  const isBertAvailable = availableModels.includes('bert')
+  const verdict = result?.verification?.verdict || (result?.prediction === 'fake' ? 'MISLEADING' : result?.prediction === 'real' ? 'RELIABLE' : 'UNVERIFIED');
+  const isMisleading = verdict === 'MISLEADING';
+  const isReliable = verdict === 'RELIABLE';
+  const isOutOfScope = verdict === 'OUT_OF_SCOPE';
+  const isUnverified = verdict === 'UNVERIFIED';
+
+  const nliModelName = result?.verification?.method?.nli_model || 'cross-encoder/nli-deberta-v3-base';
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       {/* Header with TrustMe Pulse Icon */}
       <motion.div
-        className="text-center mb-10"
+        className="text-center mb-8"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -84,14 +87,19 @@ export default function Predict() {
           <TrustMePulseBadge size="md" pulseRate="2.2s" />
         </div>
         <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-          Verify <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-500">Health News & Claims</span>
+          TrustMe AI <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-500">Scanner</span>
         </h1>
-        <p className="text-slate-700 text-sm sm:text-base max-w-xl mx-auto mt-2 font-normal">
-          Paste any healthcare article, viral rumor, or social media post to compute clinical credibility
+        <p className="text-slate-700 text-sm sm:text-base max-w-2xl mx-auto mt-2 font-normal">
+          Cross-references healthcare assertions against verified medical literature using neural passage retrieval and zero-shot NLI
         </p>
       </motion.div>
 
-      {/* Sample Texts (Dense Light Blue, Zero White, Interactive Chips) */}
+      {/* Scope Note */}
+      <div className="mb-6 p-3 rounded-xl bg-[#D6EBFC] border border-pink-300 text-xs font-mono text-slate-700 text-center shadow-sm">
+        <span className="font-bold text-cyan-900">Coverage Scope:</span> Verifies against WHO, CDC, MedlinePlus and curated Indian guidance. Scope: COVID-19, Tuberculosis, Dengue, Diabetes.
+      </div>
+
+      {/* Sample Texts */}
       <motion.div
         className="flex flex-wrap gap-2 justify-center mb-6"
         initial={{ opacity: 0 }}
@@ -121,76 +129,42 @@ export default function Predict() {
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Paste a healthcare news article, claim, or social media post here..."
-          rows={6}
+          placeholder="Paste a healthcare news article, claim, or clinical assertion here..."
+          rows={5}
           className="input-field resize-none text-base leading-relaxed mb-4"
         />
 
-        <div className="flex flex-col sm:flex-row items-center gap-4">
-          {/* Model Selector */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          {/* Static Engine Pill */}
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono text-slate-700 uppercase tracking-wider font-bold">Model:</span>
-            <div className="flex bg-[#C8E4FA] rounded-xl p-1 border border-pink-300 shadow-inner">
-              <button
-                type="button"
-                onClick={() => setModel('baseline')}
-                className={`px-3.5 py-1.5 text-xs font-mono font-bold rounded-lg transition-all duration-300 ${
-                  model === 'baseline'
-                    ? 'bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-500 text-white shadow-sm shadow-cyan-500/20'
-                    : 'text-slate-600 hover:text-pink-800'
-                }`}
-              >
-                TF-IDF + LR (Live)
-              </button>
-
-              {isBertAvailable ? (
-                <button
-                  type="button"
-                  onClick={() => setModel('bert')}
-                  className={`px-3.5 py-1.5 text-xs font-mono font-bold rounded-lg transition-all duration-300 ${
-                    model === 'bert'
-                      ? 'bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-500 text-white shadow-sm shadow-cyan-500/20'
-                      : 'text-slate-600 hover:text-pink-800'
-                  }`}
-                >
-                  DistilBERT
-                </button>
-              ) : (
-                <div
-                  title="Transformer model fine-tuning is currently in the deployment roadmap"
-                  className="px-3 py-1.5 text-xs font-mono font-bold rounded-lg text-slate-400 cursor-not-allowed flex items-center gap-1.5"
-                >
-                  <span>DistilBERT</span>
-                  <span className="text-[10px] px-1.5 py-0.5 bg-pink-100 border border-pink-200 text-pink-700 rounded-full font-sans font-bold">
-                    Coming Soon
-                  </span>
-                </div>
-              )}
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#C8E4FA] border border-pink-300 rounded-full text-xs font-mono font-bold text-cyan-900 shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
+              <span>Evidence Retrieval (MiniLM) + NLI (DeBERTa-v3) — Live</span>
             </div>
           </div>
 
-          <div className="flex gap-3 sm:ml-auto">
-            <button onClick={handleReset} className="btn-secondary flex items-center gap-2 py-2.5 px-4 font-mono text-xs">
+          <div className="flex gap-3 w-full sm:w-auto justify-end">
+            <button onClick={handleReset} className="btn-secondary flex items-center gap-2 py-2 px-4 font-mono text-xs">
               <RotateCcw className="w-4 h-4 text-slate-400" />
               Reset
             </button>
             <button
               onClick={handlePredict}
               disabled={loading || !text.trim()}
-              className="btn-primary flex items-center gap-2 py-2.5 px-6 font-mono text-xs"
+              className="btn-primary flex items-center gap-2 py-2 px-6 font-mono text-xs"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Search className="w-4 h-4" />
               )}
-              {loading ? 'Analyzing Claim...' : 'Analyze Health Claim'}
+              {loading ? 'Verifying with Evidence...' : 'Scan with Evidence Engine'}
             </button>
           </div>
         </div>
 
         {/* Character Count */}
-        <div className="mt-3 text-right text-xs text-slate-400 font-mono">
+        <div className="mt-3 text-right text-[11px] text-slate-400 font-mono">
           {text.length} characters
         </div>
       </motion.div>
@@ -199,20 +173,20 @@ export default function Predict() {
       <AnimatePresence>
         {error && (
           <motion.div
-            className="glass-card p-4 mb-6 border-hg-danger/30 bg-hg-danger/5"
+            className="glass-card p-4 mb-6 border-rose-500/30 bg-rose-50/50"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
           >
-            <div className="flex items-center gap-3 text-hg-danger">
+            <div className="flex items-center gap-3 text-rose-600">
               <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-              <span className="text-sm">{error}</span>
+              <span className="text-sm font-medium">{error}</span>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Result */}
+      {/* Primary Result: Evidence Panel & Summary */}
       <AnimatePresence>
         {result && (
           <motion.div
@@ -220,130 +194,125 @@ export default function Predict() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.4 }}
+            className="space-y-6"
           >
-            {/* Prediction Card */}
-            <div className={`glass-card p-8 mb-6 border-l-4 ${
-              result.prediction === 0
-                ? 'border-l-rose-500 bg-rose-50/30'
-                : 'border-l-emerald-500 bg-emerald-50/30'
-            }`}>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+            {/* Primary Evidence Panel */}
+            {result.verification ? (
+              <EvidencePanel verification={result.verification} />
+            ) : (
+              /* Fallback Summary Card */
+              <div className={`glass-card p-8 border-l-4 ${
+                isMisleading
+                  ? 'border-l-rose-500 bg-rose-50/30'
+                  : isReliable
+                    ? 'border-l-emerald-500 bg-emerald-50/30'
+                    : 'border-l-amber-500 bg-amber-50/30'
+              }`}>
                 <div className="flex items-center gap-4">
                   <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
-                    result.prediction === 0
+                    isMisleading
                       ? 'bg-rose-100 text-rose-600 shadow-sm'
-                      : 'bg-emerald-100 text-emerald-600 shadow-sm'
+                      : isReliable
+                        ? 'bg-emerald-100 text-emerald-600 shadow-sm'
+                        : isOutOfScope
+                          ? 'bg-indigo-100 text-indigo-600 shadow-sm'
+                          : 'bg-amber-100 text-amber-600 shadow-sm'
                   }`}>
-                    {result.prediction === 0
-                      ? <AlertTriangle className="w-7 h-7" />
-                      : <CheckCircle className="w-7 h-7" />
-                    }
+                    {isMisleading && <AlertTriangle className="w-7 h-7" />}
+                    {isReliable && <CheckCircle className="w-7 h-7" />}
+                    {isOutOfScope && <Compass className="w-7 h-7" />}
+                    {isUnverified && <HelpCircle className="w-7 h-7" />}
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-slate-900">
-                      {result.prediction === 0 ? 'Likely Fake / Misleading' : 'Likely Real / Credible'}
+                      {isMisleading && 'Potentially Misleading / Refuted'}
+                      {isReliable && 'Clinically Verified — Reliable'}
+                      {isOutOfScope && 'Out of Scope — Abstention'}
+                      {isUnverified && 'Inconclusive / Unverified'}
                     </h2>
-                    <p className="text-slate-500 text-sm mt-0.5 font-mono">
-                      Model: {result.model === 'baseline' ? 'TF-IDF + Logistic Regression' : 'DistilBERT Transformer'}
+                    <p className="text-slate-500 text-xs mt-0.5 font-mono">
+                      Stance Inference Model: <span className="font-bold text-slate-700">{nliModelName}</span>
                     </p>
                   </div>
                 </div>
               </div>
+            )}
 
-              {/* Confidence Gauge */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-semibold text-slate-800">Confidence</span>
-                    <span className="text-lg font-bold text-slate-900 font-mono">
-                      {(result.confidence * 100).toFixed(1)}%
-                    </span>
-                  </div>
-                  <div className="w-full h-3 bg-pink-100/60 rounded-full overflow-hidden">
-                    <motion.div
-                      className={`h-full rounded-full ${
-                        result.prediction === 0
-                          ? 'bg-gradient-to-r from-rose-400 to-rose-600'
-                          : 'bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-500'
-                      }`}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${result.confidence * 100}%` }}
-                      transition={{ duration: 0.8, ease: 'easeOut' }}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs font-mono font-bold mb-2 uppercase">
-                    <span className="text-rose-600">Fake</span>
-                    <span className="text-emerald-600">Real</span>
-                  </div>
-                  <div className="w-full h-3 bg-pink-100/60 rounded-full overflow-hidden flex">
-                    <motion.div
-                      className="h-full bg-rose-500"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${result.probabilities.fake * 100}%` }}
-                      transition={{ duration: 0.8 }}
-                    />
-                    <motion.div
-                      className="h-full bg-gradient-to-r from-cyan-500 to-emerald-500"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${result.probabilities.real * 100}%` }}
-                      transition={{ duration: 0.8 }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-xs font-mono text-slate-500 mt-1">
-                    <span>{(result.probabilities.fake * 100).toFixed(1)}%</span>
-                    <span>{(result.probabilities.real * 100).toFixed(1)}%</span>
-                  </div>
-                </div>
-              </div>
+            {/* Footer with NLI model name */}
+            <div className="p-3 bg-[#D6EBFC]/60 rounded-xl border border-pink-200 text-xs font-mono text-slate-600 flex flex-wrap justify-between items-center gap-2">
+              <span>Primary Decision Engine: <strong className="text-slate-800">DeBERTa-v3 Stance Inference</strong></span>
+              <span>Model: <strong className="text-cyan-900">{nliModelName}</strong></span>
             </div>
 
-            {/* Word Importance */}
-            {result.word_importance && result.word_importance.length > 0 && (
-              <div className="glass-card p-6">
-                <div className="flex items-center gap-2 mb-5">
-                  <Sparkles className="w-5 h-5 text-teal-600" />
-                  <h3 className="text-lg font-bold text-slate-900">Word-Level Attribution (SHAP)</h3>
+            {/* ── Collapsed Secondary Writing-Style Signal (TF-IDF + LR) ── */}
+            <div className="border border-pink-300 rounded-2xl overflow-hidden bg-[#D6EBFC]/80 shadow-sm">
+              <button
+                onClick={() => setStyleSignalOpen((o) => !o)}
+                className="w-full p-4 flex items-center justify-between hover:bg-[#C8E4FA] transition-all text-left cursor-pointer"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Layers className="w-4 h-4 text-pink-700" />
+                  <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-900">
+                    Secondary writing-style signal (TF-IDF + Logistic Regression)
+                  </span>
                 </div>
-                <p className="text-sm text-slate-600 mb-4">
-                  These words had the strongest influence on the clinical prediction. Red words push toward &quot;Fake&quot;, cyan-green toward &quot;Real&quot;.
-                </p>
-                <div className="space-y-2.5">
-                  {result.word_importance.map(({ word, contribution, direction }, i) => {
-                    const absVal = Math.abs(contribution)
-                    const maxContrib = Math.max(...result.word_importance.map(w => Math.abs(w.contribution)))
-                    const pct = maxContrib > 0 ? (absVal / maxContrib) * 100 : 0
+                {styleSignalOpen ? (
+                  <ChevronUp className="w-4 h-4 text-slate-600" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-slate-600" />
+                )}
+              </button>
 
-                    return (
-                      <div key={`${word}-${i}`} className="flex items-center gap-3 p-2 bg-[#C8E4FA] hover:bg-[#BEE0FB] rounded-xl border border-pink-200 transition-colors">
-                        <span className="text-sm font-mono text-slate-900 min-w-[130px] max-w-[200px] font-extrabold text-left">{word}</span>
-                        <div className="flex-1 h-4 bg-[#D6EBFC] rounded-full border border-pink-200 overflow-hidden relative shadow-inner">
-                          <motion.div
-                            className={`h-full rounded-full ${
-                              direction === 'fake'
-                                ? 'bg-gradient-to-r from-rose-400 to-rose-600'
-                                : 'bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-500'
-                            }`}
-                            initial={{ width: 0 }}
-                            animate={{ width: `${pct}%` }}
-                            transition={{ duration: 0.5, delay: i * 0.05 }}
-                          />
+              <AnimatePresence>
+                {styleSignalOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden border-t border-pink-200"
+                  >
+                    <div className="p-5 space-y-4">
+                      <p className="text-xs text-slate-600 leading-relaxed font-mono">
+                        Vocabulary weights reflect writing-style correlation learned from the CoAID and FakeHealth health news corpus.
+                        This is a <strong>secondary statistical signal</strong> only — the evidence panel above serves as the primary verification authority.
+                      </p>
+
+                      {/* Display explanations / word features */}
+                      {result.explanations && result.explanations.length > 0 ? (
+                        <div className="space-y-2">
+                          {result.explanations.slice(0, 10).map((ex, i) => (
+                            <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-[#C8E4FA] border border-pink-200 text-xs font-mono">
+                              <span className="font-bold text-slate-800">{ex.feature}</span>
+                              <div className="flex items-center gap-2">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  ex.effect === 'fake' ? 'bg-rose-100 text-rose-700 border border-rose-200' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                                }`}>
+                                  {ex.effect.toUpperCase()}
+                                </span>
+                                <span className="text-slate-600">weight: {ex.weight.toFixed(3)}</span>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                        <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-lg border shadow-sm w-20 text-center ${
-                          direction === 'fake' ? 'text-rose-700 bg-rose-50 border-rose-200' : 'text-teal-800 bg-emerald-50 border-emerald-200'
-                        }`}>
-                          {direction === 'fake' ? 'Fake' : 'Real'}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
+                      ) : result.keywords && result.keywords.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {result.keywords.map((kw, i) => (
+                            <span key={i} className="px-2.5 py-1 rounded-full bg-[#C8E4FA] border border-pink-300 text-xs font-mono font-semibold text-slate-800">
+                              {kw.word} ({kw.weight > 0 ? `+${kw.weight.toFixed(2)}` : kw.weight.toFixed(2)})
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-slate-500 font-mono">No specific lexical tokens triggered high TF-IDF deviation.</p>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
     </div>
-  )
+  );
 }

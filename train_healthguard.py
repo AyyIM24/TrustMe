@@ -271,24 +271,18 @@ def train_baseline(df):
 # Transformer Model — DistilBERT / BioBERT
 # ============================================================================
 
-def train_transformer(df, epochs=3, use_biobert=False):
-    """Fine-tune a transformer model for health misinformation detection."""
+def train_transformer(df, epochs=2, use_biobert=False, max_samples=800):
+    """Fine-tune a transformer model for health misinformation detection using PyTorch."""
     print("\n" + "=" * 60)
     print("TRANSFORMER MODEL — " + ("BioBERT" if use_biobert else "DistilBERT"))
     print("=" * 60)
 
     try:
         import torch
-        from transformers import (
-            AutoModelForSequenceClassification,
-            AutoTokenizer,
-            Trainer,
-            TrainingArguments,
-        )
-        from datasets import Dataset
-    except ImportError:
-        print("\n  [ERROR] torch/transformers not installed.")
-        print("  Run: pip install torch transformers datasets accelerate")
+        from torch.utils.data import Dataset, DataLoader
+        from transformers import AutoModelForSequenceClassification, AutoTokenizer
+    except ImportError as e:
+        print(f"\n  [ERROR] PyTorch or Transformers missing: {e}")
         return None, None, None, None, None
 
     model_name = "dmis-lab/biobert-base-cased-v1.2" if use_biobert else "distilbert-base-uncased"
@@ -297,107 +291,137 @@ def train_transformer(df, epochs=3, use_biobert=False):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"  Device: {device}")
 
-    if device == "cpu":
-        print("  [WARNING] Running on CPU — training will be slow!")
-        print("  Consider using Google Colab / Kaggle for GPU access.")
+    # Stratified subset for efficient CPU fine-tuning if requested
+    if max_samples and len(df) > max_samples:
+        n_per_class = max_samples // 2
+        df_fake = df[df["label"] == 0].sample(min(n_per_class, (df["label"] == 0).sum()), random_state=42)
+        df_real = df[df["label"] == 1].sample(min(n_per_class, (df["label"] == 1).sum()), random_state=42)
+        df_sub = pd.concat([df_fake, df_real]).sample(frac=1.0, random_state=42).reset_index(drop=True)
+        print(f"  [SUBSET] Using balanced sample of {len(df_sub)} articles ({len(df_fake)} fake, {len(df_real)} real)")
+    else:
+        df_sub = df
 
-    # Split data
-    X = df["text_clean"]
-    y = df["label"]
+    # Split data (80% train, 20% test)
+    X = df_sub["text_clean"]
+    y = df_sub["label"]
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
+
+    print(f"  Train samples: {len(X_train)} | Test samples: {len(X_test)}")
 
     # Tokenize
     print("  Loading tokenizer...")
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-    def tokenize_fn(examples):
-        return tokenizer(examples["text"], padding="max_length", truncation=True, max_length=256)
+    class HealthNewsTorchDataset(Dataset):
+        def __init__(self, texts, labels, max_len=128):
+            self.encodings = tokenizer(
+                texts.tolist(),
+                padding="max_length",
+                truncation=True,
+                max_length=max_len,
+                return_tensors="pt"
+            )
+            self.labels = torch.tensor(labels.tolist(), dtype=torch.long)
 
-    train_dataset = Dataset.from_dict({"text": X_train.tolist(), "label": y_train.tolist()})
-    test_dataset = Dataset.from_dict({"text": X_test.tolist(), "label": y_test.tolist()})
+        def __len__(self):
+            return len(self.labels)
 
-    print("  Tokenizing...")
-    train_dataset = train_dataset.map(tokenize_fn, batched=True)
-    test_dataset = test_dataset.map(tokenize_fn, batched=True)
+        def __getitem__(self, idx):
+            item = {key: val[idx] for key, val in self.encodings.items()}
+            item["labels"] = self.labels[idx]
+            return item
 
-    train_dataset.set_format("torch", columns=["input_ids", "attention_mask", "label"])
-    test_dataset.set_format("torch", columns=["input_ids", "attention_mask", "label"])
+    print("  Tokenizing datasets...")
+    train_ds = HealthNewsTorchDataset(X_train, y_train)
+    test_ds = HealthNewsTorchDataset(X_test, y_test)
+
+    train_loader = DataLoader(train_ds, batch_size=16, shuffle=True)
+    test_loader = DataLoader(test_ds, batch_size=32, shuffle=False)
 
     # Load model
-    print("  Loading model...")
+    print("  Loading classification model...")
     model = AutoModelForSequenceClassification.from_pretrained(
         model_name,
         num_labels=2,
         id2label={0: "FAKE", 1: "REAL"},
         label2id={"FAKE": 0, "REAL": 1},
     )
+    model.to(device)
 
-    # Training arguments
+    # Optimizer
+    optimizer = torch.optim.AdamW(model.parameters(), lr=3e-5, weight_decay=0.01)
+
+    # Training loop
     bert_dir = os.path.join(MODEL_DIR, "bert")
-    training_args = TrainingArguments(
-        output_dir=bert_dir,
-        num_train_epochs=epochs,
-        per_device_train_batch_size=16,
-        per_device_eval_batch_size=32,
-        learning_rate=2e-5,
-        weight_decay=0.01,
-        eval_strategy="epoch",
-        save_strategy="epoch",
-        logging_steps=50,
-        load_best_model_at_end=True,
-        metric_for_best_model="f1",
-        report_to="none",
-    )
+    os.makedirs(bert_dir, exist_ok=True)
 
-    # Custom metrics function
-    def compute_metrics(eval_pred):
-        logits, labels = eval_pred
-        preds = np.argmax(logits, axis=-1)
-        return {
-            "accuracy": accuracy_score(labels, preds),
-            "f1": f1_score(labels, preds, average="macro"),
-            "precision": precision_score(labels, preds, average="macro"),
-            "recall": recall_score(labels, preds, average="macro"),
-        }
-
-    # Train
     print(f"\n  Training for {epochs} epochs...")
-    trainer = Trainer(
-        model=model,
-        args=training_args,
-        train_dataset=train_dataset,
-        eval_dataset=test_dataset,
-        compute_metrics=compute_metrics,
-    )
-    trainer.train()
+    train_losses = []
+    model.train()
 
-    # Save the best model
-    trainer.save_model(bert_dir)
+    for epoch in range(epochs):
+        epoch_loss = 0.0
+        step_count = 0
+        for step, batch in enumerate(train_loader):
+            optimizer.zero_grad()
+            input_ids = batch["input_ids"].to(device)
+            attention_mask = batch["attention_mask"].to(device)
+            labels = batch["labels"].to(device)
+
+            outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
+            loss = outputs.loss
+            loss.backward()
+            optimizer.step()
+
+            epoch_loss += loss.item()
+            step_count += 1
+            train_losses.append(loss.item())
+
+            if (step + 1) % 10 == 0 or (step + 1) == len(train_loader):
+                print(f"    Epoch {epoch + 1}/{epochs} | Step {step + 1}/{len(train_loader)} | Batch Loss: {loss.item():.4f}")
+
+        avg_loss = epoch_loss / max(1, step_count)
+        print(f"  [Epoch {epoch + 1} Complete] Average Loss: {avg_loss:.4f}")
+
+    # Save model and tokenizer
+    print(f"\n  Saving trained transformer to {bert_dir}...")
+    model.save_pretrained(bert_dir)
     tokenizer.save_pretrained(bert_dir)
-    print(f"\n  Model saved to: {bert_dir}/")
+    print(f"  Model successfully saved to: {bert_dir}/")
 
-    # Evaluate
-    print("\n  Evaluating...")
-    predictions = trainer.predict(test_dataset)
-    y_pred = np.argmax(predictions.predictions, axis=-1)
+    # Evaluation
+    print("\n  Evaluating on held-out test set...")
+    model.eval()
+    all_preds = []
+    all_probs = []
 
-    # Get probabilities with softmax
-    probs = torch.nn.functional.softmax(torch.tensor(predictions.predictions), dim=-1)
-    y_prob = probs[:, 1].numpy()
+    with torch.no_grad():
+        for batch in test_loader:
+            input_ids = batch["input_ids"].to(device)
+            attention_mask = batch["attention_mask"].to(device)
+
+            outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+            logits = outputs.logits
+            probs = torch.nn.functional.softmax(logits, dim=-1)
+            preds = torch.argmax(probs, dim=-1)
+
+            all_preds.extend(preds.cpu().numpy())
+            all_probs.extend(probs[:, 1].cpu().numpy())
+
+    y_pred = np.array(all_preds)
+    y_prob = np.array(all_probs)
 
     metrics = evaluate_model(y_test.values, y_pred, y_prob, "bert")
 
-    # Plot training loss
-    log_history = trainer.state.log_history
-    train_losses = [x["loss"] for x in log_history if "loss" in x]
+    # Plot training loss curve
     if train_losses:
         fig, ax = plt.subplots(figsize=(10, 5))
         ax.plot(train_losses, color="#06b6d4", linewidth=2)
-        ax.set_title("Transformer Training Loss", fontsize=16, fontweight="bold")
-        ax.set_xlabel("Step")
-        ax.set_ylabel("Loss")
+        ax.set_title("DistilBERT Transformer Training Loss Curve", fontsize=15, fontweight="bold")
+        ax.set_xlabel("Training Step", fontsize=12)
+        ax.set_ylabel("Loss", fontsize=12)
         ax.spines[["top", "right"]].set_visible(False)
         plt.tight_layout()
         plt.savefig(os.path.join(OUTPUTS_DIR, "training_loss_curve.png"), dpi=150)
@@ -651,8 +675,10 @@ def main():
                         help="Path to the dataset CSV (columns: text, label)")
     parser.add_argument("--model", type=str, choices=["baseline", "bert"], default=None,
                         help="Model to train: 'baseline' (TF-IDF+LR) or 'bert' (DistilBERT)")
-    parser.add_argument("--epochs", type=int, default=3,
-                        help="Number of training epochs for transformer (default: 3)")
+    parser.add_argument("--epochs", type=int, default=2,
+                        help="Number of training epochs for transformer (default: 2)")
+    parser.add_argument("--max-samples", type=int, default=800,
+                        help="Max balanced samples for training to optimize training speed (default: 800)")
     parser.add_argument("--biobert", action="store_true",
                         help="Use BioBERT instead of DistilBERT")
     parser.add_argument("--eda", action="store_true",
@@ -676,7 +702,7 @@ def main():
     df = load_and_preprocess(data_path)
 
     # EDA
-    if args.eda or args.model is not None:
+    if args.eda:
         run_eda(df)
 
     # Train baseline
@@ -689,11 +715,11 @@ def main():
     # Train transformer
     elif args.model == "bert":
         model, tokenizer, X_test, y_test, metrics = train_transformer(
-            df, epochs=args.epochs, use_biobert=args.biobert
+            df, epochs=args.epochs, use_biobert=args.biobert, max_samples=args.max_samples
         )
 
-    # Compare models
-    if args.compare:
+    # Compare models if requested or if both metrics exist
+    if args.compare or os.path.exists(os.path.join(OUTPUTS_DIR, "metrics_baseline.json")):
         compare_models()
 
     print("\n" + "=" * 60)

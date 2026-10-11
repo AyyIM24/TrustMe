@@ -72,6 +72,7 @@ class VerificationResult(BaseModel):
     summary: str
     steps: Optional[List[str]] = []
     known_myth_match: Optional[Dict[str, Any]] = None
+    method: Optional[Dict[str, Any]] = None
 
 
 class AnalyzeResponse(BaseModel):

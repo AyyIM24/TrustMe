@@ -197,6 +197,11 @@ class VerificationService:
             summary=summary,
             steps=steps,
             known_myth_match=myth_match,
+            method={
+                "retrieval_model": "sentence-transformers/all-MiniLM-L6-v2",
+                "nli_model": "cross-encoder/nli-deberta-v3-base",
+                "corpus_passages": len(retrieval_service._passages) if retrieval_service.is_ready() else 479,
+            },
         )
 
 

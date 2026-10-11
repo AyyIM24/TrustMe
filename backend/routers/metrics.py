@@ -15,11 +15,23 @@ OUTPUTS_DIR = os.path.join(PROJECT_DIR, "outputs")
 
 @router.get("/metrics")
 async def get_metrics(request: Request):
-    """Return saved evaluation metrics for all trained models."""
+    """Return saved evaluation metrics for all trained models and evidence benchmark."""
     model_service = request.app.state.model_service
     metrics = model_service.get_metrics()
+    
+    eval_benchmark = None
+    eval_benchmark_path = os.path.join(OUTPUTS_DIR, "eval_metrics.json")
+    if os.path.exists(eval_benchmark_path):
+        import json
+        try:
+            with open(eval_benchmark_path, "r", encoding="utf-8") as f:
+                eval_benchmark = json.load(f)
+        except Exception:
+            pass
+
     return {
         "metrics": metrics,
+        "eval_benchmark": eval_benchmark,
         "available_models": model_service.available_models,
     }
 

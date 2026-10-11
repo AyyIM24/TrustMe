@@ -24,7 +24,7 @@ const datasets = [
 const techStack = [
   { category: 'Frontend', items: ['React 18', 'Vite', 'TailwindCSS', 'Framer Motion', 'Recharts', 'Lucide Icons', 'Zustand', 'Three.js'] },
   { category: 'Backend', items: ['FastAPI', 'Uvicorn', 'Pydantic v2', 'Python 3.10+'] },
-  { category: 'Machine Learning', items: ['Scikit-learn', 'TF-IDF Vectorizer', 'Logistic Regression (Live)', 'DistilBERT / BioBERT (Roadmap)', 'HuggingFace Transformers'] },
+  { category: 'Machine Learning & NLP', items: ['Evidence Retrieval (MiniLM)', 'Natural Language Inference (DeBERTa-v3)', 'TF-IDF + Logistic Regression (Secondary)', 'DistilBERT / BioBERT (Future work)', 'HuggingFace Transformers'] },
   { category: 'Explainability (XAI)', items: ['SHAP (LinearExplainer)', 'Matplotlib', 'Feature Attribution'] },
   { category: 'Data & Processing', items: ['Pandas', 'NumPy', 'NLTK', 'BeautifulSoup4', 'WebRTC Biometrics'] },
 ]
@@ -33,7 +33,7 @@ const methodology = [
   { step: '1', title: 'Data Collection & Merging', desc: 'Combined CoAID + FakeHealth datasets into 4,107 labeled health news articles (1,369 fake, 2,738 real).' },
   { step: '2', title: 'Text Preprocessing', desc: 'Lowercase, URL/HTML removal, stopword removal, lemmatization, and TF-IDF vectorization.' },
   { step: '3', title: 'Trained Baseline Model (Live)', desc: 'TF-IDF (10K features, bigrams) + Logistic Regression with balanced class weights — actively serving inferences.' },
-  { step: '4', title: 'Transformer Model (Roadmap)', desc: 'Planned fine-tuning of DistilBERT/BioBERT sequence classification on specialized GPU hardware as a future enhancement.' },
+  { step: '4', title: 'Future Domain Models (Future work)', desc: 'Exploratory fine-tuning of domain-specific DistilBERT/BioBERT weights on specialized GPU clusters reserved for future research iterations.' },
   { step: '5', title: 'Rigorous Evaluation', desc: 'Accuracy, Precision, Recall, F1, ROC-AUC, and confusion matrix benchmarking baseline model veracity.' },
   { step: '6', title: 'Explainability', desc: 'SHAP (LinearExplainer) for word-level contribution analysis and global feature importance.' },
 ]

@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Menu, HeartPulse, Activity, User, ChevronRight, ShieldCheck, Sparkles } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import useAuthStore from '../../store/authStore';
+import { getHealth } from '../../api';
 
 const PAGE_METADATA = {
   '/dashboard': {
@@ -12,7 +13,7 @@ const PAGE_METADATA = {
   },
   '/predict': {
     title: 'TrustMe AI Healthcare Classifier',
-    subtitle: 'Dual-model NLP detection with token-level SHAP explainability',
+    subtitle: 'Evidence-based claim verification against authentic medical sources',
     category: 'Inference',
   },
   '/analyze': {
@@ -49,8 +50,17 @@ const PAGE_METADATA = {
 
 export default function AppLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [passageCount, setPassageCount] = useState(479);
   const location = useLocation();
   const { user } = useAuthStore();
+
+  useEffect(() => {
+    getHealth()
+      .then((data) => {
+        if (data?.corpus_passages) setPassageCount(data.corpus_passages);
+      })
+      .catch(() => {});
+  }, []);
 
   const meta = PAGE_METADATA[location.pathname] || {
     title: 'TrustMe Clinical Terminal',
@@ -130,7 +140,7 @@ export default function AppLayout({ children }) {
           {/* Model Status Pill */}
           <div className="hidden md:flex items-center gap-2 text-xs font-mono text-cyan-900 bg-[#C8E4FA] hover:bg-[#BEE0FB] border border-pink-300 px-3 py-1.5 rounded-full font-semibold shadow-sm hover:shadow-md transition-all duration-200">
             <span className="w-2 h-2 rounded-full bg-cyan-500 animate-ping" />
-            <span>AI Active (77.5% Acc)</span>
+            <span>Evidence Engine Active · {passageCount} passages</span>
           </div>
 
           {/* User Profile Pill */}
