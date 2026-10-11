@@ -1,0 +1,16 @@
+{
+  "embed_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "passage_count": 484,
+  "disease_counts": {
+    "covid19": 96,
+    "dengue": 81,
+    "diabetes": 123,
+    "tuberculosis": 184
+  },
+  "corpus_hash": "f8f5b39747aa",
+  "built_at": "2026-10-10T14:27:29.143527Z",
+  "embedding_shape": [
+    484,
+    384
+  ]
+}

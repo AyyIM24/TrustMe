@@ -1,6 +1,7 @@
 """
-ensemble_service.py - Multi-Signal Ensemble for Accurate Fake vs Real News Detection.
-Combines ML text classification, myth pattern matching, and domain credibility.
+ensemble_service.py — [LEGACY] Multi-Signal Ensemble for Fake vs Real News Detection.
+NOTE: In TrustMe AI v2, verification_service.py is the primary authority for evidence-based verdicts.
+This service is retained for backwards compatibility and fallback heuristics.
 """
 
 import re

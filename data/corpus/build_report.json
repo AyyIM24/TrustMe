@@ -1,0 +1,355 @@
+{
+  "build_date": "2026-10-10",
+  "diseases": {
+    "covid19": {
+      "fetched": [
+        {
+          "url": "https://www.who.int/news-room/fact-sheets/detail/coronavirus-disease-(covid-19)",
+          "source_name": "WHO \u2014 COVID-19 Fact Sheet",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\covid19\\news-room-fact-sheets-detail-coronavirus-disease-covid-19.md",
+          "chars": 10885
+        },
+        {
+          "url": "https://www.cdc.gov/covid/about/index.html",
+          "source_name": "CDC \u2014 About COVID-19",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\covid19\\covid-about-index-html.md",
+          "chars": 2434
+        },
+        {
+          "url": "https://www.cdc.gov/covid/vaccines/index.html",
+          "source_name": "CDC \u2014 COVID-19 Vaccines",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\covid19\\covid-vaccines-index-html.md",
+          "chars": 1370
+        },
+        {
+          "url": "https://www.who.int/news-room/questions-and-answers/item/coronavirus-disease-covid-19-how-is-it-transmitted",
+          "source_name": "WHO \u2014 COVID-19 Transmission Q&A",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\covid19\\news-room-questions-and-answers-item-coronavirus-disease-covid-19-how-is-it-tran.md",
+          "chars": 6001
+        },
+        {
+          "url": "https://www.cdc.gov/covid/prevention/index.html",
+          "source_name": "CDC \u2014 COVID-19 Prevention",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\covid19\\covid-prevention-index-html.md",
+          "chars": 2080
+        },
+        {
+          "url": "https://www.who.int/news-room/questions-and-answers/item/coronavirus-disease-covid-19",
+          "source_name": "WHO \u2014 COVID-19 General Q&A",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\covid19\\news-room-questions-and-answers-item-coronavirus-disease-covid-19.md",
+          "chars": 12877
+        }
+      ],
+      "failed": [
+        {
+          "url": "https://www.who.int/emergencies/diseases/novel-coronavirus-2019/question-and-answers-hub/q-a-detail/coronavirus-disease-covid-19-vaccines",
+          "source_name": "WHO \u2014 COVID-19 Vaccines Q&A",
+          "error": "HTTP 404"
+        },
+        {
+          "url": "https://medlineplus.gov/covid19.html",
+          "source_name": "MedlinePlus \u2014 COVID-19",
+          "error": "HTTP 404"
+        },
+        {
+          "url": "https://medlineplus.gov/covidvaccines.html",
+          "source_name": "MedlinePlus \u2014 COVID-19 Vaccines",
+          "error": "HTTP 404"
+        },
+        {
+          "url": "https://www.mohfw.gov.in/covid_vaccination/vaccination/index.html",
+          "source_name": "MoHFW \u2014 COVID Vaccination India",
+          "error": "HTTP 403"
+        },
+        {
+          "url": "https://www.nih.gov/research-training/medical-research-initiatives/activ/covid-19-vaccines",
+          "source_name": "NIH \u2014 COVID-19 Vaccines Research",
+          "error": "HTTP 403"
+        },
+        {
+          "url": "https://www.mohfw.gov.in/index.html",
+          "source_name": "MoHFW \u2014 Ministry of Health India",
+          "error": "HTTP 403"
+        },
+        {
+          "url": "https://pib.gov.in/PressReleasePage.aspx?PRID=1798319",
+          "source_name": "PIB \u2014 COVID Vaccination Milestone",
+          "error": "HTTP 403"
+        },
+        {
+          "url": "https://www.ncdc.gov.in/index1.php?lang=1&level=1&sublinkid=6322&lid=4135",
+          "source_name": "NCDC India \u2014 COVID-19 Information",
+          "error": "Timeout"
+        },
+        {
+          "url": "https://www.cdc.gov/covid/long-term-effects/index.html",
+          "source_name": "CDC \u2014 Long COVID",
+          "error": "HTTP 404"
+        }
+      ],
+      "skipped_domain": [],
+      "skipped_short": []
+    },
+    "tuberculosis": {
+      "fetched": [
+        {
+          "url": "https://www.who.int/news-room/fact-sheets/detail/tuberculosis",
+          "source_name": "WHO \u2014 Tuberculosis Fact Sheet",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\tuberculosis\\news-room-fact-sheets-detail-tuberculosis.md",
+          "chars": 10498
+        },
+        {
+          "url": "https://www.cdc.gov/tb/about/index.html",
+          "source_name": "CDC \u2014 About Tuberculosis",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\tuberculosis\\tb-about-index-html.md",
+          "chars": 5792
+        },
+        {
+          "url": "https://medlineplus.gov/tuberculosis.html",
+          "source_name": "MedlinePlus \u2014 Tuberculosis",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\tuberculosis\\tuberculosis-html.md",
+          "chars": 9481
+        },
+        {
+          "url": "https://www.cdc.gov/tb/prevention/index.html",
+          "source_name": "CDC \u2014 TB Prevention",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\tuberculosis\\tb-prevention-index-html.md",
+          "chars": 9080
+        },
+        {
+          "url": "https://www.cdc.gov/tb/signs-symptoms/index.html",
+          "source_name": "CDC \u2014 TB Symptoms",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\tuberculosis\\tb-signs-symptoms-index-html.md",
+          "chars": 1697
+        },
+        {
+          "url": "https://www.cdc.gov/tb/treatment/index.html",
+          "source_name": "CDC \u2014 TB Treatment",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\tuberculosis\\tb-treatment-index-html.md",
+          "chars": 11883
+        },
+        {
+          "url": "https://www.who.int/news-room/questions-and-answers/item/tuberculosis",
+          "source_name": "WHO \u2014 TB Q&A",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\tuberculosis\\news-room-questions-and-answers-item-tuberculosis.md",
+          "chars": 3510
+        },
+        {
+          "url": "https://medlineplus.gov/ency/article/000077.htm",
+          "source_name": "MedlinePlus \u2014 Pulmonary TB",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\tuberculosis\\ency-article-000077-htm.md",
+          "chars": 6510
+        }
+      ],
+      "failed": [
+        {
+          "url": "https://tbcindia.gov.in/showfile.php?lid=3271",
+          "source_name": "TB India \u2014 National Strategic Plan",
+          "error": "Connection error: HTTPSConnectionPool(host='tbcindia.gov.in', port=443): Max retries exceeded with"
+        },
+        {
+          "url": "https://www.nih.gov/news-events/news-releases/nih-scientists-identify-antibody-that-neutralizes-tb-causing-bacteria-animal-model",
+          "source_name": "NIH \u2014 TB Research",
+          "error": "HTTP 403"
+        },
+        {
+          "url": "https://www.nhp.gov.in/disease/respiratory/tuberculosis",
+          "source_name": "NHP India \u2014 Tuberculosis",
+          "error": "Connection error: HTTPSConnectionPool(host='www.nhp.gov.in', port=443): Max retries exceeded with "
+        },
+        {
+          "url": "https://www.mohfw.gov.in/index1.php?lang=1&level=2&sublinkid=3946&lid=2426",
+          "source_name": "MoHFW \u2014 TB Programme India",
+          "error": "HTTP 403"
+        },
+        {
+          "url": "https://www.cdc.gov/tb/testing-diagnosis/index.html",
+          "source_name": "CDC \u2014 TB Testing and Diagnosis",
+          "error": "HTTP 404"
+        },
+        {
+          "url": "https://www.who.int/tb/areas-of-work/treatment/en/",
+          "source_name": "WHO \u2014 TB Treatment Strategy",
+          "error": "HTTP 404"
+        }
+      ],
+      "skipped_domain": [],
+      "skipped_short": []
+    },
+    "dengue": {
+      "fetched": [
+        {
+          "url": "https://www.who.int/news-room/fact-sheets/detail/dengue-and-severe-dengue",
+          "source_name": "WHO \u2014 Dengue and Severe Dengue Fact Sheet",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\dengue\\news-room-fact-sheets-detail-dengue-and-severe-dengue.md",
+          "chars": 11465
+        },
+        {
+          "url": "https://www.cdc.gov/dengue/about/index.html",
+          "source_name": "CDC \u2014 About Dengue",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\dengue\\dengue-about-index-html.md",
+          "chars": 1811
+        },
+        {
+          "url": "https://medlineplus.gov/dengue.html",
+          "source_name": "MedlinePlus \u2014 Dengue",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\dengue\\dengue-html.md",
+          "chars": 4177
+        },
+        {
+          "url": "https://www.cdc.gov/dengue/signs-symptoms/index.html",
+          "source_name": "CDC \u2014 Dengue Symptoms",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\dengue\\dengue-signs-symptoms-index-html.md",
+          "chars": 1854
+        },
+        {
+          "url": "https://www.cdc.gov/dengue/prevention/index.html",
+          "source_name": "CDC \u2014 Dengue Prevention",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\dengue\\dengue-prevention-index-html.md",
+          "chars": 2679
+        },
+        {
+          "url": "https://www.cdc.gov/dengue/treatment/index.html",
+          "source_name": "CDC \u2014 Dengue Treatment",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\dengue\\dengue-treatment-index-html.md",
+          "chars": 1476
+        },
+        {
+          "url": "https://www.cdc.gov/dengue/transmission/index.html",
+          "source_name": "CDC \u2014 Dengue Transmission",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\dengue\\dengue-transmission-index-html.md",
+          "chars": 1606
+        }
+      ],
+      "failed": [
+        {
+          "url": "https://nvbdcp.gov.in/index1.php?lang=1&level=1&sublinkid=5769&lid=3796",
+          "source_name": "NVBDCP \u2014 Dengue Information India",
+          "error": "Connection error: HTTPSConnectionPool(host='nvbdcp.gov.in', port=443): Max retries exceeded with u"
+        },
+        {
+          "url": "https://mohfw.gov.in/index1.php?lang=1&level=2&sublinkid=6323&lid=4137",
+          "source_name": "MoHFW \u2014 Dengue Clinical Guidelines",
+          "error": "HTTP 403"
+        },
+        {
+          "url": "https://www.nhp.gov.in/disease/non-communicable-disease/dengue",
+          "source_name": "NHP India \u2014 Dengue",
+          "error": "Connection error: HTTPSConnectionPool(host='www.nhp.gov.in', port=443): Max retries exceeded with "
+        },
+        {
+          "url": "https://www.ncdc.gov.in/index1.php?lang=1&level=1&sublinkid=6350&lid=4178",
+          "source_name": "NCDC India \u2014 Dengue",
+          "error": "Timeout"
+        },
+        {
+          "url": "https://www.who.int/docs/default-source/searo/india/publications/comprehensive-guidelines-for-dengue.pdf",
+          "source_name": "WHO SEARO \u2014 Comprehensive Dengue Guidelines India",
+          "error": "HTTP 404"
+        }
+      ],
+      "skipped_domain": [],
+      "skipped_short": [
+        {
+          "url": "https://www.who.int/news-room/questions-and-answers/item/dengue",
+          "source_name": "WHO \u2014 Dengue Q&A",
+          "chars": 305
+        }
+      ]
+    },
+    "diabetes": {
+      "fetched": [
+        {
+          "url": "https://www.who.int/news-room/fact-sheets/detail/diabetes",
+          "source_name": "WHO \u2014 Diabetes Fact Sheet",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\diabetes\\news-room-fact-sheets-detail-diabetes.md",
+          "chars": 7774
+        },
+        {
+          "url": "https://www.cdc.gov/diabetes/about/index.html",
+          "source_name": "CDC \u2014 About Diabetes",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\diabetes\\diabetes-about-index-html.md",
+          "chars": 4335
+        },
+        {
+          "url": "https://medlineplus.gov/diabetes.html",
+          "source_name": "MedlinePlus \u2014 Diabetes",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\diabetes\\diabetes-html.md",
+          "chars": 10058
+        },
+        {
+          "url": "https://medlineplus.gov/diabetesmedicines.html",
+          "source_name": "MedlinePlus \u2014 Diabetes Medicines",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\diabetes\\diabetesmedicines-html.md",
+          "chars": 5715
+        },
+        {
+          "url": "https://www.cdc.gov/diabetes/risk-factors/index.html",
+          "source_name": "CDC \u2014 Diabetes Risk Factors",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\diabetes\\diabetes-risk-factors-index-html.md",
+          "chars": 3112
+        },
+        {
+          "url": "https://www.cdc.gov/diabetes/treatment/index.html",
+          "source_name": "CDC \u2014 Diabetes Treatment",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\diabetes\\diabetes-treatment-index-html.md",
+          "chars": 3342
+        },
+        {
+          "url": "https://medlineplus.gov/diabeticdiet.html",
+          "source_name": "MedlinePlus \u2014 Diabetic Diet",
+          "file": "C:\\Users\\Admin\\OneDrive\\Desktop\\Fake News Project\\data\\corpus\\diabetes\\diabeticdiet-html.md",
+          "chars": 5971
+        }
+      ],
+      "failed": [
+        {
+          "url": "https://www.cdc.gov/diabetes/type1/index.html",
+          "source_name": "CDC \u2014 Type 1 Diabetes",
+          "error": "HTTP 404"
+        },
+        {
+          "url": "https://www.cdc.gov/diabetes/type2/index.html",
+          "source_name": "CDC \u2014 Type 2 Diabetes",
+          "error": "HTTP 404"
+        },
+        {
+          "url": "https://www.who.int/news-room/questions-and-answers/item/noncommunicable-diseases-diabetes",
+          "source_name": "WHO \u2014 Diabetes Q&A",
+          "error": "HTTP 404"
+        },
+        {
+          "url": "https://www.nhp.gov.in/disease/non-communicable-disease/diabetes",
+          "source_name": "NHP India \u2014 Diabetes",
+          "error": "Connection error: HTTPSConnectionPool(host='www.nhp.gov.in', port=443): Max retries exceeded with "
+        },
+        {
+          "url": "https://www.mohfw.gov.in/index1.php?lang=1&level=2&sublinkid=3960&lid=2444",
+          "source_name": "MoHFW \u2014 Diabetes Programme India",
+          "error": "HTTP 403"
+        },
+        {
+          "url": "https://medlineplus.gov/insulinresistance.html",
+          "source_name": "MedlinePlus \u2014 Insulin Resistance",
+          "error": "HTTP 404"
+        },
+        {
+          "url": "https://www.cdc.gov/diabetes/prevention/index.html",
+          "source_name": "CDC \u2014 Diabetes Prevention",
+          "error": "HTTP 404"
+        },
+        {
+          "url": "https://www.nih.gov/research-training/accelerating-medicines-partnership-program/diabetes",
+          "source_name": "NIH \u2014 Diabetes Research",
+          "error": "HTTP 403"
+        }
+      ],
+      "skipped_domain": [],
+      "skipped_short": []
+    }
+  },
+  "total_fetched": 28,
+  "total_failed": 28,
+  "total_skipped_domain": 0,
+  "total_skipped_short": 1
+}

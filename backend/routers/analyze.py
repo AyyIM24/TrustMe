@@ -5,16 +5,49 @@ from models.user import User
 from models.analysis import Analysis
 from schemas.analysis import (
     AnalyzeRequest, AnalyzeUrlRequest, AnalyzeResponse, KeywordItem,
-    FeatureExplanation, CredibilitySignal
+    FeatureExplanation, CredibilitySignal, VerificationResult
 )
 from services.ml_service import predictor
 from services.url_scraper import scrape_article
 from services.auth_service import optional_auth
 from services.credibility_service import analyze_credibility, generate_tags
-from services.ensemble_service import compute_ensemble
+from services.verification_service import verification_service
 from typing import Optional
 
 router = APIRouter(tags=["Analysis"])
+
+
+def _determine_verdict_and_probabilities(verification: VerificationResult, ml_result: dict):
+    """
+    Map verification pipeline verdict to the primary prediction enum, confidence, and probabilities.
+    Backward-compatible with existing prediction field ('fake' | 'real' | 'uncertain').
+    """
+    v = verification.verdict
+
+    if v == "MISLEADING":
+        pred = "fake"
+        conf = round(verification.confidence * 100, 1) if verification.confidence <= 1.0 else round(verification.confidence, 1)
+        conf = max(60.0, min(conf, 99.0))
+        fake_p = conf
+        real_p = round(100.0 - fake_p, 1)
+    elif v == "RELIABLE":
+        pred = "real"
+        conf = round(verification.confidence * 100, 1) if verification.confidence <= 1.0 else round(verification.confidence, 1)
+        conf = max(60.0, min(conf, 99.0))
+        real_p = conf
+        fake_p = round(100.0 - real_p, 1)
+    elif v == "UNVERIFIED":
+        pred = "uncertain"
+        conf = 50.0
+        fake_p = 50.0
+        real_p = 50.0
+    else:  # OUT_OF_SCOPE
+        pred = "uncertain"
+        conf = 0.0
+        fake_p = round(ml_result.get("fake_probability", 50.0), 1)
+        real_p = round(ml_result.get("real_probability", 50.0), 1)
+
+    return pred, conf, fake_p, real_p
 
 
 @router.post("/analyze", response_model=AnalyzeResponse)
@@ -23,14 +56,14 @@ async def analyze_text(
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(optional_auth)
 ):
-    """Analyze text for fake news detection. Authentication OPTIONAL (saves to history if logged in)."""
+    """Analyze text for fake news detection with evidence-based verification."""
     if not payload.text or len(payload.text.strip()) < 10:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Text must be at least 10 characters long"
         )
 
-    # Run ML prediction (raw signal — biased toward US data, will be blended)
+    # Secondary signal: ML text style prediction
     ml_result = predictor.predict(payload.text)
     keywords = predictor.get_top_keywords(payload.text)
 
@@ -38,16 +71,19 @@ async def analyze_text(
     credibility = analyze_credibility(payload.title or "", payload.text, payload.source_url)
     explanations = predictor.explain_prediction(payload.text)
 
-    # Ensemble: blend ML + credibility + myth detection
-    ensemble = compute_ensemble(
-        ml_result=ml_result,
-        credibility=credibility,
-        source_url=payload.source_url,
-        title=payload.title or "",
+    # Primary authority: Evidence-based verification pipeline
+    verification = verification_service.verify_article(
         text=payload.text,
+        title=payload.title,
     )
 
-    tags = generate_tags(payload.title or "", payload.text, ensemble["prediction"], credibility["credibility_score"])
+    prediction, confidence, fake_prob, real_prob = _determine_verdict_and_probabilities(
+        verification, ml_result
+    )
+
+    tags = generate_tags(
+        payload.title or "", payload.text, prediction, credibility["credibility_score"]
+    )
 
     # Save to database
     record = Analysis(
@@ -55,10 +91,10 @@ async def analyze_text(
         input_text=payload.text[:5000],
         title=payload.title,
         source_url=payload.source_url,
-        prediction=ensemble["prediction"],
-        confidence=ensemble["confidence"],
+        prediction=prediction,
+        confidence=confidence,
         credibility_score=credibility["credibility_score"],
-        model_version=ensemble["model_version"],
+        model_version="v2-evidence",
         word_count=ml_result["word_count"]
     )
     db.add(record)
@@ -67,12 +103,12 @@ async def analyze_text(
 
     return AnalyzeResponse(
         id=record.id,
-        prediction=ensemble["prediction"],
-        confidence=ensemble["confidence"],
-        fake_probability=ensemble["fake_probability"],
-        real_probability=ensemble["real_probability"],
+        prediction=prediction,
+        confidence=confidence,
+        fake_probability=fake_prob,
+        real_probability=real_prob,
         word_count=ml_result["word_count"],
-        model_version=ensemble["model_version"],
+        model_version="v2-evidence",
         keywords=[KeywordItem(**kw) for kw in keywords],
         title=payload.title,
         source_url=payload.source_url,
@@ -82,7 +118,8 @@ async def analyze_text(
         credibility_color=credibility["credibility_color"],
         credibility_signals=[CredibilitySignal(**s) for s in credibility["signals"]],
         tags=tags,
-        explanations=[FeatureExplanation(**ex) for ex in explanations]
+        explanations=[FeatureExplanation(**ex) for ex in explanations],
+        verification=verification
     )
 
 
@@ -92,7 +129,7 @@ async def analyze_url(
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(optional_auth)
 ):
-    """Scrape a URL and analyze the article text. Authentication OPTIONAL (saves to history if logged in)."""
+    """Scrape a URL and analyze article text with evidence-based verification."""
     try:
         scraped = await scrape_article(payload.url)
     except Exception as e:
@@ -108,7 +145,7 @@ async def analyze_url(
             detail="Could not extract sufficient text from the URL"
         )
 
-    # Run ML prediction (raw signal — will be blended with credibility)
+    # Secondary signal: ML text style prediction
     ml_result = predictor.predict(scraped["text"])
     keywords = predictor.get_top_keywords(scraped["text"])
 
@@ -116,27 +153,30 @@ async def analyze_url(
     credibility = analyze_credibility(scraped.get("title") or "", scraped["text"], payload.url)
     explanations = predictor.explain_prediction(scraped["text"])
 
-    # Ensemble: blend ML + credibility + myth detection
-    ensemble = compute_ensemble(
-        ml_result=ml_result,
-        credibility=credibility,
-        source_url=payload.url,
-        title=scraped.get("title") or "",
+    # Primary authority: Evidence-based verification pipeline
+    verification = verification_service.verify_article(
         text=scraped["text"],
+        title=scraped.get("title"),
     )
 
-    tags = generate_tags(scraped.get("title") or "", scraped["text"], ensemble["prediction"], credibility["credibility_score"])
+    prediction, confidence, fake_prob, real_prob = _determine_verdict_and_probabilities(
+        verification, ml_result
+    )
+
+    tags = generate_tags(
+        scraped.get("title") or "", scraped["text"], prediction, credibility["credibility_score"]
+    )
 
     # Save to database
     record = Analysis(
         user_id=current_user.id if current_user else None,
         input_text=scraped["text"][:5000],
-        title=scraped["title"],
+        title=scraped.get("title"),
         source_url=payload.url,
-        prediction=ensemble["prediction"],
-        confidence=ensemble["confidence"],
+        prediction=prediction,
+        confidence=confidence,
         credibility_score=credibility["credibility_score"],
-        model_version=ensemble["model_version"],
+        model_version="v2-evidence",
         word_count=ml_result["word_count"]
     )
     db.add(record)
@@ -145,14 +185,14 @@ async def analyze_url(
 
     return AnalyzeResponse(
         id=record.id,
-        prediction=ensemble["prediction"],
-        confidence=ensemble["confidence"],
-        fake_probability=ensemble["fake_probability"],
-        real_probability=ensemble["real_probability"],
+        prediction=prediction,
+        confidence=confidence,
+        fake_probability=fake_prob,
+        real_probability=real_prob,
         word_count=ml_result["word_count"],
-        model_version=ensemble["model_version"],
+        model_version="v2-evidence",
         keywords=[KeywordItem(**kw) for kw in keywords],
-        title=scraped["title"],
+        title=scraped.get("title"),
         source_url=payload.url,
         created_at=record.created_at,
         credibility_score=credibility["credibility_score"],
@@ -160,7 +200,8 @@ async def analyze_url(
         credibility_color=credibility["credibility_color"],
         credibility_signals=[CredibilitySignal(**s) for s in credibility["signals"]],
         tags=tags,
-        explanations=[FeatureExplanation(**ex) for ex in explanations]
+        explanations=[FeatureExplanation(**ex) for ex in explanations],
+        verification=verification
     )
 
 
@@ -177,11 +218,16 @@ async def get_analysis(
             detail="Analysis not found"
         )
 
-    # Re-extract keywords and run credibility/explainability
     keywords = predictor.get_top_keywords(record.input_text)
     credibility = analyze_credibility(record.title or "", record.input_text, record.source_url)
     tags = generate_tags(record.title or "", record.input_text, record.prediction, credibility["credibility_score"])
     explanations = predictor.explain_prediction(record.input_text)
+
+    # Re-run verification for the record view
+    verification = verification_service.verify_article(
+        text=record.input_text,
+        title=record.title,
+    )
 
     return AnalyzeResponse(
         id=record.id,
@@ -190,7 +236,7 @@ async def get_analysis(
         fake_probability=round(100 - record.confidence, 2) if record.prediction == "real" else record.confidence,
         real_probability=record.confidence if record.prediction == "real" else round(100 - record.confidence, 2),
         word_count=record.word_count or 0,
-        model_version=record.model_version or "v1",
+        model_version=record.model_version or "v2-evidence",
         keywords=[KeywordItem(**kw) for kw in keywords],
         title=record.title,
         source_url=record.source_url,
@@ -200,5 +246,6 @@ async def get_analysis(
         credibility_color=credibility["credibility_color"],
         credibility_signals=[CredibilitySignal(**s) for s in credibility["signals"]],
         tags=tags,
-        explanations=[FeatureExplanation(**ex) for ex in explanations]
+        explanations=[FeatureExplanation(**ex) for ex in explanations],
+        verification=verification
     )

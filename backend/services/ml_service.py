@@ -2,10 +2,15 @@ import pickle
 import os
 import numpy as np
 from services.text_processor import clean_text
+from config import HEALTH_MODEL_DIR_PRIMARY, HEALTH_MODEL_DIR_FALLBACK
 
 
 class FakeNewsPredictor:
-    """Singleton ML service that loads the trained model and vectorizer."""
+    """Singleton ML service — loads the health-trained model and vectorizer.
+    
+    Primary:  Model/baseline/  (10,000 features — CoAID + FakeHealth health corpus)
+    Fallback: backend/ml/      (5,000 features  — old Reuters political corpus, WARNING)
+    """
 
     _instance = None
 
@@ -18,21 +23,52 @@ class FakeNewsPredictor:
     def __init__(self):
         if self._initialized:
             return
-        
-        ml_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "ml")
-        model_path = os.path.join(ml_dir, "model.pkl")
-        vectorizer_path = os.path.join(ml_dir, "vectorizer.pkl")
 
-        print(f"[ML] Loading model from {model_path}")
+        # Try primary path first (health-trained, 10k features)
+        primary_model = os.path.join(HEALTH_MODEL_DIR_PRIMARY, "model.pkl")
+        primary_vec   = os.path.join(HEALTH_MODEL_DIR_PRIMARY, "vectorizer.pkl")
+
+        if os.path.exists(primary_model) and os.path.exists(primary_vec):
+            model_path      = primary_model
+            vectorizer_path = primary_vec
+            self.model_dir  = HEALTH_MODEL_DIR_PRIMARY
+            self._using_fallback = False
+        else:
+            # Fallback — loud warning
+            fallback_model = os.path.join(HEALTH_MODEL_DIR_FALLBACK, "model.pkl")
+            fallback_vec   = os.path.join(HEALTH_MODEL_DIR_FALLBACK, "vectorizer.pkl")
+            print(
+                "\n" + "=" * 70 +
+                "\n[ML] WARNING: Health-trained model NOT found at:\n"
+                f"   {primary_model}\n"
+                "[ML] Falling back to OLD POLITICAL CORPUS model (backend/ml/).\n"
+                "[ML] Results will be UNRELIABLE for health news.\n"
+                "[ML] Please ensure Model/baseline/model.pkl exists.\n" +
+                "=" * 70 + "\n"
+            )
+            model_path      = fallback_model
+            vectorizer_path = fallback_vec
+            self.model_dir  = HEALTH_MODEL_DIR_FALLBACK
+            self._using_fallback = True
+
+        print(f"[ML] Loading model      : {model_path}")
         with open(model_path, "rb") as f:
             self.model = pickle.load(f)
 
-        print(f"[ML] Loading vectorizer from {vectorizer_path}")
+        print(f"[ML] Loading vectorizer : {vectorizer_path}")
         with open(vectorizer_path, "rb") as f:
             self.vectorizer = pickle.load(f)
 
+        self.n_features = len(self.vectorizer.vocabulary_)
         self._initialized = True
-        print("[ML] Model and vectorizer loaded successfully [OK]")
+
+        status = "[FALLBACK - political corpus]" if self._using_fallback else "[OK - health-trained]"
+        print(
+            "[ML] Model loaded " + status + " | "
+            "n_features=" + str(self.n_features) + " | "
+            "dir=" + str(self.model_dir) + "\n"
+        )
+
 
     def predict(self, text: str) -> dict:
         """Run prediction on input text.

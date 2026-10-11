@@ -8,6 +8,7 @@ import {
 import { factCheckAPI } from '../api/client';
 import toast from 'react-hot-toast';
 import TrustMePulseBadge from '../components/common/TrustMePulseBadge';
+import EvidencePanel from '../components/analyze/EvidencePanel';
 
 // ── Verdict Config ────────────────────────────────────────────────
 const VERDICT_CONFIG = {
@@ -125,14 +126,21 @@ const ResultCard = ({ result }) => {
       {/* Disease Knowledge Base Panel */}
       {result.kb_result && <DiseaseKBPanel kbResult={result.kb_result} />}
 
-      {/* Wikipedia Evidence */}
-      {result.evidence && result.evidence.filter(ev => ev.source.startsWith('Wikipedia')).length > 0 && (
+      {/* TrustMe AI v2 Evidence Verification Panel */}
+      {result.verification && (
+        <div className="pt-2">
+          <EvidencePanel verification={result.verification} />
+        </div>
+      )}
+
+      {/* Authenticated Evidence Literature & References */}
+      {result.evidence && result.evidence.length > 0 && !result.verification && (
         <div className="space-y-2.5">
           <p className="text-xs font-mono font-bold text-pink-800 uppercase tracking-widest flex items-center gap-1.5">
-            <BookOpen className="w-3.5 h-3.5 text-teal-700" /> Wikipedia References
+            <BookOpen className="w-3.5 h-3.5 text-teal-700" /> Authenticated Evidence Literature
           </p>
           <div className="space-y-2">
-            {result.evidence.filter(ev => ev.source.startsWith('Wikipedia')).map((ev, i) => (
+            {result.evidence.map((ev, i) => (
               <div key={i} className="bg-[#C8E4FA] rounded-2xl border border-pink-300 p-4 space-y-2 shadow-sm hover:shadow-md hover:border-pink-400 transition-all">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <span className="text-xs font-mono font-bold text-cyan-800 bg-[#D6EBFC] border border-pink-300 px-3 py-1 rounded-full shadow-sm">
@@ -145,7 +153,7 @@ const ResultCard = ({ result }) => {
                       rel="noopener noreferrer"
                       className="flex items-center gap-1 text-xs text-teal-700 hover:text-teal-900 font-bold font-mono transition-colors underline"
                     >
-                      <ExternalLink className="w-3 h-3" /> View Source
+                      <ExternalLink className="w-3 h-3" /> View Official Source
                     </a>
                   )}
                 </div>

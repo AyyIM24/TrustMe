@@ -81,7 +81,15 @@ export const exportToPDF = (data) => {
 
   // Verdict Left Border Indicator
   const isFake = data.prediction === 'fake';
-  doc.setFillColor(isFake ? 255 : 0, isFake ? 45 : 255, isFake ? 85 : 136); // Red vs Green
+  const isUncertain = data.prediction === 'uncertain';
+  
+  if (isFake) {
+    doc.setFillColor(255, 45, 85); // Red
+  } else if (isUncertain) {
+    doc.setFillColor(217, 119, 6); // Amber
+  } else {
+    doc.setFillColor(0, 255, 136); // Green
+  }
   doc.rect(15, nextY, 3, 24, 'F');
 
   doc.setFont('Helvetica', 'bold');
@@ -90,8 +98,16 @@ export const exportToPDF = (data) => {
   doc.text('SYSTEM VERDICT', 23, nextY + 7);
 
   doc.setFontSize(15);
-  doc.setTextColor(isFake ? 220 : 0, isFake ? 20 : 150, isFake ? 60 : 70);
-  doc.text(isFake ? 'Lately Identified as FAKE / UNVERIFIED' : 'Verified as REAL / TRUSTWORTHY', 23, nextY + 16);
+  if (isFake) {
+    doc.setTextColor(220, 20, 60);
+    doc.text('Identified as DISPUTED / REFUTED', 23, nextY + 16);
+  } else if (isUncertain) {
+    doc.setTextColor(180, 100, 0);
+    doc.text(data.verification?.verdict === 'OUT_OF_SCOPE' ? 'OUT OF CLINICAL SCOPE' : 'INCONCLUSIVE / UNVERIFIED', 23, nextY + 16);
+  } else {
+    doc.setTextColor(0, 150, 70);
+    doc.text('Verified as REAL / SUPPORTED', 23, nextY + 16);
+  }
 
   // Confidence & Credibility Badge
   doc.setFont('Helvetica', 'bold');

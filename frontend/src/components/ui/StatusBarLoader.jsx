@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
 const PHASES = [
-  { progress: 12, label: 'Connecting to Threat database...' },
-  { progress: 38, label: 'Running TF-IDF tokenization...' },
-  { progress: 65, label: 'Comparing regression coefficients...' },
-  { progress: 88, label: 'Calculating credibility signal scores...' },
-  { progress: 100, label: 'Generating audit report...' }
+  { progress: 15, label: 'Scanning disease scope (COVID-19, TB, Dengue, Diabetes)...' },
+  { progress: 35, label: 'Extracting empirical health assertions...' },
+  { progress: 60, label: 'Searching authentic sources (WHO, CDC, MoHFW guidelines)...' },
+  { progress: 85, label: 'Running zero-shot stance inference (DeBERTa-v3 cross-encoder)...' },
+  { progress: 100, label: 'Synthesizing evidence-based audit report...' }
 ];
 
 const StatusBarLoader = ({ isVisible }) => {

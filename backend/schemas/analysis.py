@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 
 
@@ -40,6 +40,40 @@ class ModelPredictionComparison(BaseModel):
     speed_ms: float
 
 
+# ── TrustMe AI v2: Evidence-based verification schemas ───────────────────────
+
+class Evidence(BaseModel):
+    passage: str
+    source_name: str
+    url: str
+    similarity: float
+    disease: Optional[str] = None
+
+
+class NLIScores(BaseModel):
+    entailment: float
+    contradiction: float
+    neutral: float
+
+
+class ClaimResult(BaseModel):
+    claim: str
+    stance: str  # "SUPPORTED" | "REFUTED" | "NOT_ENOUGH_EVIDENCE"
+    confidence: float
+    evidence: Optional[List[Evidence]] = []
+    nli_scores: Optional[NLIScores] = None
+
+
+class VerificationResult(BaseModel):
+    verdict: str  # "RELIABLE" | "MISLEADING" | "UNVERIFIED" | "OUT_OF_SCOPE"
+    confidence: float
+    disease: Optional[str] = None
+    claims: List[ClaimResult] = []
+    summary: str
+    steps: Optional[List[str]] = []
+    known_myth_match: Optional[Dict[str, Any]] = None
+
+
 class AnalyzeResponse(BaseModel):
     id: int
     prediction: str
@@ -59,6 +93,8 @@ class AnalyzeResponse(BaseModel):
     tags: Optional[List[str]] = []
     explanations: Optional[List[FeatureExplanation]] = []
     predictions_comparison: Optional[List[ModelPredictionComparison]] = None
+    # v2 addition
+    verification: Optional[VerificationResult] = None
 
 
 class AnalysisHistoryItem(BaseModel):
@@ -71,6 +107,7 @@ class AnalysisHistoryItem(BaseModel):
     source_url: Optional[str] = None
     created_at: datetime
     input_text_preview: Optional[str] = None
+    verdict: Optional[str] = None
 
     class Config:
         from_attributes = True

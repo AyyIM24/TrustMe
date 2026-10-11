@@ -1,0 +1,2 @@
+LABORATORY DEMONSTRATES FAULT-TOLERANT LOGICAL QUBITS WITH ERROR CORRECTION
+Researchers at an international quantum physics laboratory announced a milestone in quantum error correction. By entangling sixty physical superconducting qubits into eight fault-tolerant logical qubits, the computational coherence time increased by an order of magnitude. The team published their benchmarks demonstrating that quantum algorithms executed with error suppression rates exceeding previous physical thresholds.

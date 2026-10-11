@@ -12,7 +12,7 @@ class Analysis(Base):
     input_text = Column(Text, nullable=False)
     title = Column(String(500), nullable=True)
     source_url = Column(String(1000), nullable=True)
-    prediction = Column(Enum("fake", "real", name="prediction_type"), nullable=False)
+    prediction = Column(Enum("fake", "real", "uncertain", name="prediction_type"), nullable=False)
     confidence = Column(Float, nullable=False)
     credibility_score = Column(Integer, nullable=True)
     model_version = Column(String(20), default="v1")
