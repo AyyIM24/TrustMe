@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 scripts/build_index.py — TrustMe AI v2 Passage Index Builder
 
@@ -84,6 +84,7 @@ def parse_md_file(filepath: str) -> dict | None:
 
     return {
         "source_name": meta.get("source_name", "Unknown"),
+        "source_type": meta.get("source_type", "official_page"),
         "url": meta["url"],
         "disease": meta["disease"],
         "retrieved_at": meta.get("retrieved_at", ""),
@@ -113,6 +114,7 @@ def make_passages(doc: dict) -> list:
             passages.append({
                 "text": chunk_text,
                 "source_name": doc["source_name"],
+                "source_type": doc.get("source_type", "official_page"),
                 "url": doc["url"],
                 "disease": doc["disease"],
                 "retrieved_at": doc["retrieved_at"],

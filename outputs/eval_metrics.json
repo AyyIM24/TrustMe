@@ -1,79 +1,79 @@
 {
-  "eval_date": "2026-10-11T05:15:46.575851+00:00Z",
-  "benchmark_size": 125,
-  "in_scope_claims": 100,
-  "out_of_scope_claims": 25,
+  "eval_date": "2026-10-11T08:35:19.789704+00:00Z",
+  "benchmark_size": 30,
+  "in_scope_claims": 20,
+  "out_of_scope_claims": 10,
   "systems": {
     "S1_baseline_ml": {
       "name": "S1: Baseline TF-IDF + Logistic Regression",
-      "total": 100,
-      "accuracy": 0.63,
-      "precision": 0.6056,
-      "recall": 0.8269,
-      "f1": 0.6992,
-      "tp": 43,
-      "fp": 28,
-      "fn": 9,
-      "tn": 20,
-      "avg_latency_ms": 1.05,
+      "total": 20,
+      "accuracy": 0.4,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "tp": 0,
+      "fp": 12,
+      "fn": 0,
+      "tn": 8,
+      "avg_latency_ms": 1.13,
       "out_of_scope_handling": "Forced real/fake classification (no scope detection)"
     },
     "S2_legacy_ensemble": {
       "name": "S2: Legacy Multi-Signal Ensemble",
-      "total": 100,
-      "accuracy": 0.56,
-      "precision": 0.75,
-      "recall": 0.2308,
-      "f1": 0.3529,
-      "tp": 12,
-      "fp": 4,
-      "fn": 40,
-      "tn": 44,
-      "avg_latency_ms": 0.24,
+      "total": 20,
+      "accuracy": 0.9,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "tp": 0,
+      "fp": 2,
+      "fn": 0,
+      "tn": 18,
+      "avg_latency_ms": 0.33,
       "out_of_scope_handling": "Forced real/fake classification (heuristic blend)"
     },
     "S3_evidence_pipeline": {
       "name": "S3: TrustMe AI v2 Evidence Pipeline",
-      "total": 100,
-      "accuracy": 0.88,
-      "precision": 0.9762,
-      "recall": 0.7885,
-      "f1": 0.8723,
-      "tp": 41,
+      "total": 20,
+      "accuracy": 0.95,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "tp": 0,
       "fp": 1,
-      "fn": 11,
-      "tn": 47,
-      "avg_latency_ms": 347.51,
+      "fn": 0,
+      "tn": 19,
+      "avg_latency_ms": 278.57,
       "out_of_scope_rejection_rate": 1.0,
-      "evidence_citation_rate": 0.98,
+      "evidence_citation_rate": 0.95,
       "out_of_scope_handling": "Explicit OUT_OF_SCOPE detection & abstention"
     }
   },
   "s3_disease_breakdown": {
     "covid19": {
-      "accuracy": 0.84,
-      "correct": 21,
-      "total": 25
+      "accuracy": 0.8,
+      "correct": 4,
+      "total": 5
     },
     "tuberculosis": {
-      "accuracy": 0.76,
-      "correct": 19,
-      "total": 25
+      "accuracy": 0.6,
+      "correct": 3,
+      "total": 5
     },
     "dengue": {
-      "accuracy": 0.68,
-      "correct": 17,
-      "total": 25
+      "accuracy": 0.4,
+      "correct": 2,
+      "total": 5
     },
     "diabetes": {
-      "accuracy": 0.4,
-      "correct": 10,
-      "total": 25
+      "accuracy": 0.0,
+      "correct": 0,
+      "total": 5
     },
     "out_of_scope": {
       "accuracy": 1.0,
-      "correct": 25,
-      "total": 25
+      "correct": 10,
+      "total": 10
     }
   }
 }

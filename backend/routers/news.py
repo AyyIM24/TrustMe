@@ -1,6 +1,7 @@
 import asyncio
 import time
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from typing import List, Optional
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
@@ -11,19 +12,16 @@ router = APIRouter(prefix="/news", tags=["News Feed"])
 
 # ── Simple In-Memory Cache ────────────────────────────────────────
 _cache = {}
-CACHE_TTL = 600  # 10 minutes
+CACHE_TTL = 300  # 5 minutes
 
 
 def _get_cached(key: str):
+    """Return cached payload if still fresh, else None."""
     if key in _cache:
-        data, timestamp = _cache[key]
+        payload, timestamp = _cache[key]
         if time.time() - timestamp < CACHE_TTL:
-            return data
+            return payload  # payload is (articles_list, fetched_at_iso)
     return None
-
-
-def _set_cached(key: str, data):
-    _cache[key] = (data, time.time())
 
 
 # ── Response Schemas ──────────────────────────────────────────────
@@ -43,6 +41,7 @@ class NewsFeedResponse(BaseModel):
     total: int
     category: str
     cached: bool = False
+    fetched_at: Optional[str] = None
 
 
 # ── Indian Healthcare RSS Feed Sources ───────────────────────────
@@ -102,6 +101,14 @@ def _parse_feed_sync(url: str, source_name: str, category: str) -> List[NewsArti
 
             pub_date = getattr(entry, "published", None) or getattr(entry, "updated", None)
 
+            # Normalise pub_date to ISO-8601 if possible
+            if pub_date:
+                try:
+                    dt = parsedate_to_datetime(pub_date)
+                    pub_date = dt.astimezone(timezone.utc).isoformat()
+                except Exception:
+                    pass  # keep raw string
+
             articles.append(NewsArticle(
                 title=title,
                 description=desc_text if desc_text else None,
@@ -127,22 +134,26 @@ async def _parse_rss_feed(url: str, source_name: str, category: str) -> List[New
 async def get_news_feed(
     category: str = Query("general", description="News category"),
     limit: int = Query(24, ge=1, le=50),
+    refresh: bool = Query(False, description="Bypass cache and force re-fetch"),
 ):
     """Get live Indian healthcare news feed from RSS sources. No auth required."""
     category = category.lower()
     if category not in RSS_FEEDS:
         category = "general"
 
-    # Check cache
+    # Check cache (skip when refresh=True)
     cache_key = f"news_india_{category}"
-    cached = _get_cached(cache_key)
-    if cached:
-        return NewsFeedResponse(
-            articles=cached[:limit],
-            total=len(cached[:limit]),
-            category=category,
-            cached=True,
-        )
+    if not refresh:
+        cached = _get_cached(cache_key)
+        if cached:
+            articles_page, fetched_ts = cached
+            return NewsFeedResponse(
+                articles=articles_page[:limit],
+                total=len(articles_page[:limit]),
+                category=category,
+                cached=True,
+                fetched_at=fetched_ts,
+            )
 
     # Fetch from all feeds for this category
     feeds = RSS_FEEDS.get(category, RSS_FEEDS["general"])
@@ -159,14 +170,27 @@ async def get_news_feed(
                 seen_titles.add(clean_title_key)
                 all_articles.append(article)
 
-    # Cache results
-    _set_cached(cache_key, all_articles)
+    # Sort by published_at descending (newest first)
+    def _sort_key(a: NewsArticle):
+        if a.published_at:
+            try:
+                return datetime.fromisoformat(a.published_at)
+            except Exception:
+                pass
+        return datetime.min.replace(tzinfo=timezone.utc)
+
+    all_articles.sort(key=_sort_key, reverse=True)
+
+    # Cache: store (articles, fetched_at_iso)
+    fetched_ts = datetime.now(timezone.utc).isoformat()
+    _cache[cache_key] = ((all_articles, fetched_ts), time.time())
 
     return NewsFeedResponse(
         articles=all_articles[:limit],
         total=len(all_articles[:limit]),
         category=category,
         cached=False,
+        fetched_at=fetched_ts,
     )
 
 

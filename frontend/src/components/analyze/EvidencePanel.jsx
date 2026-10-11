@@ -239,8 +239,18 @@ const EvidencePanel = ({ verification }) => {
                           </blockquote>
 
                           <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-white/5 text-[11px]">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-bold text-cyan-300">{ev.source_name}</span>
+                              {/* Source type badge */}
+                              {ev.source_type === 'curated_summary' ? (
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/20 border border-amber-500/30 text-amber-300 uppercase tracking-wider">
+                                  Curated summary
+                                </span>
+                              ) : (
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 uppercase tracking-wider">
+                                  Official page
+                                </span>
+                              )}
                               <span className="text-slate-500">•</span>
                               <span className="text-slate-400 font-mono">
                                 {Math.round(ev.similarity * 100)}% semantic match

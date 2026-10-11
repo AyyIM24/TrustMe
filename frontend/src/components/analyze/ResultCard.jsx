@@ -17,12 +17,13 @@ import toast from 'react-hot-toast';
 const ResultCard = ({ result }) => {
   const [feedbackGiven, setFeedbackGiven] = useState(null);
   const [isExplainOpen, setIsExplainOpen] = useState(false);
+  const [keywordsOpen, setKeywordsOpen] = useState(false);
   const { token } = useAuthStore();
 
   const isFake = result.prediction === 'fake';
   const isUncertain = result.prediction === 'uncertain';
   const isOutOfScope = result.verification?.verdict === 'OUT_OF_SCOPE';
-  const isUnverified = result.verification?.verdict === 'UNVERIFIED';
+  const isUnverified = result.verification?.verdict === 'UNVERIFIED' || isUncertain;
 
   const handleFeedback = async (isCorrect) => {
     if (!token) {
@@ -72,6 +73,46 @@ const ResultCard = ({ result }) => {
       {/* ── Evidence Pipeline Panel (Primary Authority in v2) ── */}
       {result.verification && (
         <EvidencePanel verification={result.verification} />
+      )}
+
+      {/* ── Secondary writing-style signal: keyword cloud (collapsed) ── */}
+      {result.keywords && result.keywords.length > 0 && (
+        <div className="border border-fs-border rounded-xl overflow-hidden">
+          <button
+            onClick={() => setKeywordsOpen(o => !o)}
+            className="w-full p-4 bg-fs-bg/40 flex items-center justify-between hover:bg-fs-bg/65 transition-all"
+          >
+            <div className="flex items-center gap-2">
+              <Layers className="w-4 h-4 text-fs-muted" />
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-fs-text">
+                Secondary writing-style signal (TF-IDF, trained on CoAID + FakeHealth)
+              </span>
+            </div>
+            {keywordsOpen ? (
+              <ChevronUp className="w-4 h-4 text-fs-muted" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-fs-muted" />
+            )}
+          </button>
+          <AnimatePresence>
+            {keywordsOpen && (
+              <motion.div
+                initial={{ height: 0 }}
+                animate={{ height: 'auto' }}
+                exit={{ height: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="p-4 bg-fs-bg/20 border-t border-fs-border">
+                  <p className="text-[11px] text-fs-muted mb-3">
+                    Words that pushed the TF-IDF baseline classifier toward Real (cyan) or Fake (rose).
+                    This is a writing-style signal only — the evidence pipeline above is the primary truth authority.
+                  </p>
+                  <KeywordCloud keywords={result.keywords} />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       )}
 
       {/* ── Primary Audit Summary Card ── */}
@@ -137,7 +178,7 @@ const ResultCard = ({ result }) => {
               ? 'This content discusses topics outside the verified health domain (COVID-19, TB, Dengue, Diabetes). No clinical verdict is asserted.'
               : isFake
                 ? `Evidence verification flagged this claim. Medical guidelines contradict assertions with ${result.confidence}% confidence. Credibility score: ${result.credibility_score}/100.`
-                : isUncertain
+                : isUnverified
                   ? `Clinical guidelines in our corpus do not provide enough matching evidence to confirm or refute these claims. Credibility score: ${result.credibility_score}/100.`
                   : `Evidence verification corroborated this content against authentic medical literature with ${result.confidence}% confidence. Credibility score: ${result.credibility_score}/100.`
             }
@@ -164,7 +205,15 @@ const ResultCard = ({ result }) => {
 
         {/* Confidence & Probabilities */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <ConfidenceMeter value={result.confidence} isFake={isFake} />
+          {!isUnverified && !isOutOfScope ? (
+            <ConfidenceMeter value={result.confidence} isFake={isFake} />
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-2">
+              <span className="text-xs text-fs-muted uppercase tracking-widest font-mono">Evidence Confidence</span>
+              <span className="text-5xl font-black font-mono text-fs-muted">—</span>
+              <span className="text-[11px] text-fs-muted font-mono">Insufficient evidence to score</span>
+            </div>
+          )}
           <div className="space-y-4">
             <ProbabilityBar
               label="Real Probability"
@@ -184,17 +233,9 @@ const ResultCard = ({ result }) => {
           </div>
         </div>
 
-        {/* Keywords */}
-        {result.keywords && result.keywords.length > 0 && (
-          <div className="mb-6 bg-fs-bg/40 border border-fs-border/60 p-4 rounded-xl">
-            <p className="text-xs text-fs-muted uppercase tracking-[0.2em] font-mono mb-3">
-              Highlight Keywords & Entity Signals
-            </p>
-            <KeywordCloud keywords={result.keywords} />
-          </div>
-        )}
+        {/* Keywords moved below EvidencePanel — see collapsed section above main card */}
 
-        {/* Model Explainability Collapsible Accordion (Relabelled as Secondary Writing-Style Signal) */}
+        {/* Model Explainability Collapsible Accordion (Secondary Writing-Style Signal) */}
         {result.explanations && result.explanations.length > 0 && (
           <div className="mb-6 border border-fs-border rounded-xl overflow-hidden">
             <button

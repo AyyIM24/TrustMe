@@ -81,8 +81,8 @@ export const statsAPI = {
 
 // News
 export const newsAPI = {
-  getFeed: (category = 'general', limit = 20) =>
-    client.get('/news/feed', { params: { category, limit } }),
+  getFeed: (category = 'general', limit = 20, refresh = false) =>
+    client.get('/news/feed', { params: { category, limit, refresh } }),
   getCategories: () => client.get('/news/categories'),
 };
 

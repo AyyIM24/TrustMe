@@ -79,12 +79,29 @@ def main():
 
     # ── Step 2: Load evaluation claims ───────────────────────────────────────
     print("\n[2/5] Loading benchmark claims...")
-    claims = []
+    all_claims = []
     with open(EVAL_CSV, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            claims.append(row)
-    print(f"      Loaded {len(claims)} benchmark claims.")
+            all_claims.append(row)
+
+    # Label quality counters (all splits)
+    n_reviewed = sum(1 for r in all_claims
+                     if r.get("reviewed", "").strip() not in ("needs_human_review", ""))
+    n_needs = sum(1 for r in all_claims
+                  if r.get("reviewed", "").strip() == "needs_human_review")
+    print(f"      Label quality ({len(all_claims)} rows): reviewed={n_reviewed}, needs_human_review={n_needs}")
+    print("      NOTE: labels drafted by script, human review pending")
+
+    # Filter to test split only
+    if all_claims and "split" in all_claims[0]:
+        claims = [r for r in all_claims if r.get("split", "test") == "test"]
+        n_all = len(all_claims)
+        print(f"      Reporting on test split: {len(claims)} claims ({n_all - len(claims)} held-out in dev)")
+    else:
+        claims = all_claims
+        n_all = len(claims)
+        print(f"      Loaded {len(claims)} benchmark claims (no split column).")
 
     # ── Step 3: Run evaluation across S1, S2, S3 ──────────────────────────────
     print("\n[3/5] Executing benchmark across S1, S2, S3...")
@@ -300,11 +317,35 @@ def main():
         print(f"      Warning: could not generate confusion matrix plot: {e}")
 
     # ── Step 7: Generate Markdown Report ─────────────────────────────────────
+    # Generate corpus source list from actual .md front matter
+    corpus_sources = set()
+    corpus_dir = os.path.join(PROJECT_ROOT, "data", "corpus")
+    import glob as _glob
+    for fpath in _glob.glob(os.path.join(corpus_dir, "**", "*.md"), recursive=True):
+        try:
+            with open(fpath, "r", encoding="utf-8") as _f:
+                raw = _f.read()
+            if raw.startswith("---"):
+                end = raw.find("---", 3)
+                if end != -1:
+                    for line in raw[3:end].splitlines():
+                        if line.strip().startswith("source_name:"):
+                            sname = line.split(":", 1)[1].strip().strip('"').strip("'")
+                            # Skip curated summary entries from the sources list
+                            if "curated summary" not in sname.lower():
+                                # Extract org from source_name (e.g. "WHO — ..." -> "WHO")
+                                org = sname.split("—")[0].strip() if "—" in sname else sname.split(" ")[0]
+                                corpus_sources.add(org)
+        except Exception:
+            pass
+    corpus_src_str = ", ".join(sorted(corpus_sources)) if corpus_sources else "WHO, CDC, MoHFW, ICMR, NTEP, NVBDCP"
+
     report_content = f"""# TrustMe AI v2 — Evidence-Based Health Verification Benchmark Report
 
 > **Evaluation Run Date:** {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}  
-> **Benchmark Dataset:** `eval/eval_claims.csv` ({len(claims)} claims across COVID-19, Tuberculosis, Dengue, Diabetes, and Out-of-Scope)  
-> **Corpus Index:** 484 passage chunks from official health bodies (WHO, CDC, MoHFW, ICMR, AIIMS)
+> **Benchmark Dataset:** `eval/eval_claims.csv` — **test split only** ({len(claims)} claims; {n_all - len(claims)} held-out in dev split)  
+> **Corpus Index:** {len(retrieval_service._passages) if retrieval_service._ready else 'N/A'} passage chunks from official health bodies ({corpus_src_str})  
+> **Label quality:** reviewed={n_reviewed}, needs_human_review={n_needs} — labels drafted by script, **human review pending**
 
 ---
 
@@ -359,7 +400,7 @@ Tested against 12 realistic full-length articles in `eval/unseen_articles/`:
 |---|---|---|---|---|
 """
     for a in article_eval_results:
-        report_content += f"| `{a['file']}` | {a['disease'] or 'None'} | **{a['verdict']}** | {a['confidence'] * 100:.0f}% | {a['claims_count']} claims |\n"
+        report_content += f"| `{a['file']}` (synthetic) | {a['disease'] or 'None'} | **{a['verdict']}** | {a['confidence'] * 100:.0f}% | {a['claims_count']} claims |\n"
 
     report_content += """
 ---

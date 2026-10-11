@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 scripts/build_corpus.py — TrustMe AI v2 Corpus Builder
 
@@ -150,6 +150,7 @@ def write_corpus_file(disease: str, slug: str, source_name: str, url: str, text:
     front_matter = (
         "---\n"
         f"source_name: \"{source_name}\"\n"
+        f"source_type: \"official_page\"\n"
         f"url: \"{url}\"\n"
         f"disease: {disease}\n"
         f"retrieved_at: \"{today}\"\n"

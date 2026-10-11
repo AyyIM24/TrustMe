@@ -1,8 +1,9 @@
 # TrustMe AI v2 — Evidence-Based Health Verification Benchmark Report
 
-> **Evaluation Run Date:** 2026-10-11 05:16:01 UTC  
-> **Benchmark Dataset:** `eval/eval_claims.csv` (125 claims across COVID-19, Tuberculosis, Dengue, Diabetes, and Out-of-Scope)  
-> **Corpus Index:** 484 passage chunks from official health bodies (WHO, CDC, MoHFW, ICMR, AIIMS)
+> **Evaluation Run Date:** 2026-10-11 08:35:34 UTC  
+> **Benchmark Dataset:** `eval/eval_claims.csv` — **test split only** (30 claims; 95 held-out in dev split)  
+> **Corpus Index:** 479 passage chunks from official health bodies (CDC, MedlinePlus, WHO)  
+> **Label quality:** reviewed=0, needs_human_review=125 — labels drafted by script, **human review pending**
 
 ---
 
@@ -23,9 +24,9 @@ The table below summarizes performance on the 100 in-scope clinical claims (52 R
 
 | System | Accuracy | Precision (Refuted) | Recall (Refuted) | F1-Score | Avg Latency (ms) | Out-of-Scope Handling |
 |---|---|---|---|---|---|---|
-| **S1: Baseline ML (TF-IDF + LR)** | **63.0%** | 60.6% | 82.7% | 0.6992 | 1.1 ms | Forced Real/Fake classification |
-| **S2: Legacy Ensemble** | **56.0%** | 75.0% | 23.1% | 0.3529 | 0.2 ms | Forced Real/Fake classification |
-| **S3: TrustMe AI v2 (Evidence Pipeline)** | **88.0%** | 97.6% | 78.8% | **0.8723** | 347.5 ms | **100% Explicit Rejection & Abstention** |
+| **S1: Baseline ML (TF-IDF + LR)** | **40.0%** | 0.0% | 0.0% | 0.0000 | 1.1 ms | Forced Real/Fake classification |
+| **S2: Legacy Ensemble** | **90.0%** | 0.0% | 0.0% | 0.0000 | 0.3 ms | Forced Real/Fake classification |
+| **S3: TrustMe AI v2 (Evidence Pipeline)** | **95.0%** | 0.0% | 0.0% | **0.0000** | 278.6 ms | **100% Explicit Rejection & Abstention** |
 
 ---
 
@@ -33,17 +34,17 @@ The table below summarizes performance on the 100 in-scope clinical claims (52 R
 
 | Disease Domain | In-Scope Claims | Correct Classifications | Accuracy | Primary Authentic Source |
 |---|---|---|---|---|
-| **COVID-19** | 25 | 21 | **84.0%** | WHO & MoHFW Clinical Guidelines |
-| **Tuberculosis** | 25 | 19 | **76.0%** | NTEP & Ni-kshay Protocols |
-| **Dengue** | 25 | 17 | **68.0%** | NVBDCP Guidelines |
-| **Diabetes** | 25 | 10 | **40.0%** | ICMR-INDIAB & ADA Standards |
-| **Out-of-Scope (Non-Health)** | 25 | 25 | **100.0%** | Explicit Abstention Protocol |
+| **COVID-19** | 5 | 4 | **80.0%** | WHO & MoHFW Clinical Guidelines |
+| **Tuberculosis** | 5 | 3 | **60.0%** | NTEP & Ni-kshay Protocols |
+| **Dengue** | 5 | 2 | **40.0%** | NVBDCP Guidelines |
+| **Diabetes** | 5 | 0 | **0.0%** | ICMR-INDIAB & ADA Standards |
+| **Out-of-Scope (Non-Health)** | 10 | 10 | **100.0%** | Explicit Abstention Protocol |
 
 ---
 
 ## 4. Architectural Verification Metrics
 
-- **Evidence Citation Rate:** **98.0%** of in-scope claims successfully retrieved >= 1 authoritative passage matching above the cosine similarity threshold (0.30).
+- **Evidence Citation Rate:** **95.0%** of in-scope claims successfully retrieved >= 1 authoritative passage matching above the cosine similarity threshold (0.30).
 - **Out-of-Scope Rejection Rate:** **100.0%** of non-health statements were appropriately routed to `OUT_OF_SCOPE` without speculative guesses.
 - **Stance Inference Zero-Shot Resolution:** DeBERTa-v3 cross-encoder dynamically mapped contradictions vs entailments directly from logits without requiring manual regex templates.
 
@@ -55,18 +56,18 @@ Tested against 12 realistic full-length articles in `eval/unseen_articles/`:
 
 | Article Document | Detected Domain | Verdict | Confidence | Extracted Claims |
 |---|---|---|---|---|
-| `covid_myth_garlic.txt` | covid19 | **MISLEADING** | 100% | 3 claims |
-| `covid_real_mohfw_advisory.txt` | covid19 | **UNVERIFIED** | 50% | 3 claims |
-| `dengue_myth_papaya_cure.txt` | dengue | **MISLEADING** | 100% | 4 claims |
-| `dengue_real_nvbdcp_advisory.txt` | dengue | **UNVERIFIED** | 50% | 4 claims |
-| `dengue_real_warning_signs.txt` | dengue | **MISLEADING** | 100% | 3 claims |
-| `diabetes_myth_karela_cure.txt` | diabetes | **MISLEADING** | 100% | 2 claims |
-| `diabetes_real_icmr_report.txt` | diabetes | **RELIABLE** | 100% | 3 claims |
-| `finance_real_central_bank.txt` | None | **OUT_OF_SCOPE** | 0% | 0 claims |
-| `sports_cricket_tournament.txt` | None | **OUT_OF_SCOPE** | 0% | 0 claims |
-| `tb_myth_herbal_cure.txt` | tuberculosis | **MISLEADING** | 99% | 3 claims |
-| `tb_real_ntep_report.txt` | tuberculosis | **UNVERIFIED** | 50% | 3 claims |
-| `tech_quantum_computing.txt` | None | **OUT_OF_SCOPE** | 0% | 0 claims |
+| `covid_myth_garlic.txt` (synthetic) | covid19 | **MISLEADING** | 81% | 3 claims |
+| `covid_real_mohfw_advisory.txt` (synthetic) | covid19 | **UNVERIFIED** | 50% | 3 claims |
+| `dengue_myth_papaya_cure.txt` (synthetic) | dengue | **MISLEADING** | 100% | 4 claims |
+| `dengue_real_nvbdcp_advisory.txt` (synthetic) | dengue | **UNVERIFIED** | 50% | 4 claims |
+| `dengue_real_warning_signs.txt` (synthetic) | dengue | **MISLEADING** | 100% | 3 claims |
+| `diabetes_myth_karela_cure.txt` (synthetic) | diabetes | **MISLEADING** | 100% | 2 claims |
+| `diabetes_real_icmr_report.txt` (synthetic) | diabetes | **RELIABLE** | 100% | 3 claims |
+| `finance_real_central_bank.txt` (synthetic) | None | **OUT_OF_SCOPE** | 0% | 0 claims |
+| `sports_cricket_tournament.txt` (synthetic) | None | **OUT_OF_SCOPE** | 0% | 0 claims |
+| `tb_myth_herbal_cure.txt` (synthetic) | tuberculosis | **MISLEADING** | 100% | 3 claims |
+| `tb_real_ntep_report.txt` (synthetic) | tuberculosis | **UNVERIFIED** | 50% | 3 claims |
+| `tech_quantum_computing.txt` (synthetic) | None | **OUT_OF_SCOPE** | 0% | 0 claims |
 
 ---
 

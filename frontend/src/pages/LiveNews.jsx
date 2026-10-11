@@ -122,8 +122,45 @@ const NewsCard = ({ article, onVerify, verifying }) => {
 };
 
 // Verify Result Overlay
-const VerifyResult = ({ result, article, onClose }) => {
-  const isFake = result.prediction === 'fake';
+const VerifyResult = ({ result, article, onClose, headlineOnly }) => {
+  // Derive display verdict from evidence pipeline first, ML prediction as fallback
+  const evVerdict = result.verification?.verdict; // MISLEADING|RELIABLE|UNVERIFIED|OUT_OF_SCOPE
+  const isUncertain = result.prediction === 'uncertain';
+
+  let verdictLabel, verdictColor, bgColor, borderColor;
+  if (evVerdict === 'MISLEADING' || (!evVerdict && result.prediction === 'fake')) {
+    verdictLabel = '\u26a0 MISLEADING';
+    verdictColor = 'text-fs-crimson';
+    bgColor = 'bg-fs-crimson/10';
+    borderColor = 'border-fs-crimson/30';
+  } else if (evVerdict === 'RELIABLE' || (!evVerdict && result.prediction === 'real' && !isUncertain)) {
+    verdictLabel = '\u2713 RELIABLE';
+    verdictColor = 'text-fs-cyan';
+    bgColor = 'bg-fs-cyan/10';
+    borderColor = 'border-fs-cyan/30';
+  } else if (evVerdict === 'OUT_OF_SCOPE') {
+    verdictLabel = '\u2298 OUT OF SCOPE';
+    verdictColor = 'text-indigo-400';
+    bgColor = 'bg-indigo-500/10';
+    borderColor = 'border-indigo-500/30';
+  } else {
+    verdictLabel = '? UNVERIFIED';
+    verdictColor = 'text-amber-400';
+    bgColor = 'bg-amber-500/10';
+    borderColor = 'border-amber-500/30';
+  }
+
+  const showConfidence = evVerdict !== 'UNVERIFIED' && !isUncertain && evVerdict !== 'OUT_OF_SCOPE';
+  const confidencePct = showConfidence
+    ? Math.round(
+        result.verification?.confidence != null
+          ? (result.verification.confidence > 1
+              ? result.verification.confidence
+              : result.verification.confidence * 100)
+          : result.confidence
+      )
+    : null;
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
@@ -138,36 +175,35 @@ const VerifyResult = ({ result, article, onClose }) => {
       >
         <div className="flex items-start justify-between">
           <h3 className="text-base font-bold font-mono uppercase tracking-wider">Analysis Result</h3>
-          <button onClick={onClose} className="text-fs-muted hover:text-fs-text transition-colors">
-            ✕
-          </button>
+          <button onClick={onClose} className="text-fs-muted hover:text-fs-text transition-colors">&#x2715;</button>
         </div>
 
         <p className="text-xs text-fs-muted line-clamp-2">{article?.title}</p>
 
-        <div className={`p-4 rounded-xl border text-center space-y-2 ${
-          isFake
-            ? 'bg-fs-crimson/10 border-fs-crimson/30'
-            : 'bg-fs-cyan/10 border-fs-cyan/30'
-        }`}>
-          <div className={`text-3xl font-black font-mono ${isFake ? 'text-fs-crimson' : 'text-fs-cyan'}`}>
-            {isFake ? '⚠ FAKE' : '✓ REAL'}
+        {/* Headline-only banner */}
+        {headlineOnly && (
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-xs font-mono text-amber-300">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <span>Headline-only check — limited evidence (article scraping unavailable for this URL)</span>
           </div>
-          <div className={`text-sm font-mono ${isFake ? 'text-fs-crimson' : 'text-fs-cyan'}`}>
-            {result.confidence}% Confidence
+        )}
+
+        <div className={`p-4 rounded-xl border text-center space-y-2 ${bgColor} ${borderColor}`}>
+          <div className={`text-3xl font-black font-mono ${verdictColor}`}>
+            {verdictLabel}
           </div>
+          {showConfidence && confidencePct != null && (
+            <div className={`text-sm font-mono ${verdictColor}`}>
+              {confidencePct}% Evidence Confidence
+            </div>
+          )}
         </div>
 
-        <div className="grid grid-cols-2 gap-3 text-xs font-mono">
-          <div className="bg-fs-bg rounded-lg p-3 border border-fs-border">
-            <p className="text-fs-muted mb-1">Fake Probability</p>
-            <p className="text-fs-crimson font-bold">{result.fake_probability}%</p>
-          </div>
-          <div className="bg-fs-bg rounded-lg p-3 border border-fs-border">
-            <p className="text-fs-muted mb-1">Real Probability</p>
-            <p className="text-fs-cyan font-bold">{result.real_probability}%</p>
-          </div>
-        </div>
+        {result.verification?.disease && (
+          <p className="text-[11px] font-mono text-fs-muted text-center">
+            Disease scope: <span className="text-fs-cyan">{result.verification.disease}</span>
+          </p>
+        )}
 
         <button
           onClick={onClose}
@@ -180,7 +216,6 @@ const VerifyResult = ({ result, article, onClose }) => {
   );
 };
 
-// ── Main LiveNews Component ────────────────────────────────────────
 const LiveNews = () => {
   const navigate = useNavigate();
   const { token } = useAuthStore();
@@ -191,17 +226,24 @@ const LiveNews = () => {
   const [verifyingUrl, setVerifyingUrl] = useState(null);
   const [verifyResult, setVerifyResult] = useState(null);
   const [verifyArticle, setVerifyArticle] = useState(null);
+  const [headlineOnly, setHeadlineOnly] = useState(false);
   const [isCached, setIsCached] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState(null);
+  const [fetchedAt, setFetchedAt] = useState(null);
 
   const fetchNews = useCallback(async (cat, isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     try {
-      const res = await newsAPI.getFeed(cat, 24);
+      const res = await newsAPI.getFeed(cat, 24, isRefresh);
       setArticles(res.data.articles || []);
       setIsCached(res.data.cached);
-      setLastUpdated(new Date());
+      if (res.data.fetched_at) {
+        try {
+          setFetchedAt(new Date(res.data.fetched_at));
+        } catch { setFetchedAt(new Date()); }
+      } else {
+        setFetchedAt(new Date());
+      }
     } catch {
       toast.error('Failed to load news feed');
     } finally {
@@ -214,27 +256,38 @@ const LiveNews = () => {
     fetchNews(category);
   }, [category, fetchNews]);
 
-  // Auto-refresh every 10 minutes
+  // Auto-refresh every 5 minutes
   useEffect(() => {
-    const timer = setInterval(() => fetchNews(category, true), 600000);
+    const timer = setInterval(() => fetchNews(category, true), 300000);
     return () => clearInterval(timer);
   }, [category, fetchNews]);
 
   const handleVerify = async (article) => {
     setVerifyingUrl(article.url);
+    setHeadlineOnly(false);
     try {
-      const text = `${article.title}. ${article.description || ''}`;
-      if (text.trim().length < 10) {
-        toast.error('Not enough text to analyze');
+      // Step 1: try scraping the full URL
+      try {
+        const res = await analyzeAPI.analyzeUrl({ url: article.url });
+        setVerifyResult(res.data);
+        setVerifyArticle(article);
         return;
+      } catch (urlErr) {
+        // URL scraping failed (Google News redirect, paywall, etc.) — fall back to headline+description
+        const text = [article.title, article.description].filter(Boolean).join('. ').trim();
+        if (text.length < 10) {
+          toast.error('Not enough text to analyze');
+          return;
+        }
+        setHeadlineOnly(true);
+        const res = await analyzeAPI.analyzeText({
+          text,
+          title: article.title,
+          source_url: article.url,
+        });
+        setVerifyResult(res.data);
+        setVerifyArticle(article);
       }
-      const res = await analyzeAPI.analyzeText({
-        text,
-        title: article.title,
-        source_url: article.url,
-      });
-      setVerifyResult(res.data);
-      setVerifyArticle(article);
     } catch (err) {
       const msg = err.response?.data?.detail || 'Verification failed';
       toast.error(msg);
@@ -300,9 +353,10 @@ const LiveNews = () => {
             ))}
           </div>
 
-          {lastUpdated && (
-            <p className="text-[10px] text-fs-muted font-mono">
-              Last updated: {lastUpdated.toLocaleTimeString()}
+          {fetchedAt && (
+            <p className="text-[10px] text-fs-muted font-mono flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {isCached ? 'Cached' : 'Live'}, fetched {fetchedAt.toLocaleTimeString()}
             </p>
           )}
         </div>
@@ -362,7 +416,8 @@ const LiveNews = () => {
           <VerifyResult
             result={verifyResult}
             article={verifyArticle}
-            onClose={() => { setVerifyResult(null); setVerifyArticle(null); }}
+            headlineOnly={headlineOnly}
+            onClose={() => { setVerifyResult(null); setVerifyArticle(null); setHeadlineOnly(false); }}
           />
         )}
       </AnimatePresence>
