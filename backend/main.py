@@ -5,6 +5,14 @@ JWT Authentication & Biometric Face Verification, Real-Time News Feed,
 Wikipedia Fact-Checking, and Historical Signal Tracking.
 """
 
+import os
+import sys
+
+# Ensure backend directory and its parents are discoverable regardless of working directory
+_BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
+if _BACKEND_DIR not in sys.path:
+    sys.path.insert(0, _BACKEND_DIR)
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
