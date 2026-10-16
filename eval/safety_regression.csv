@@ -1,0 +1,15 @@
+claim_text,claim_type,forbidden_stance,expected_verdict
+Tuberculosis spreads by sharing food and utensils.,false,SUPPORTED,REFUTED
+Tuberculosis is a hereditary disease.,false,SUPPORTED,REFUTED
+There is a specific medicine that cures dengue within one day.,false,SUPPORTED,REFUTED
+Antibiotics can cure COVID-19.,false,SUPPORTED,REFUTED
+Garlic and hot water cure COVID-19.,false,SUPPORTED,REFUTED
+5G towers spread coronavirus.,false,SUPPORTED,REFUTED
+COVID-19 vaccines change human DNA.,false,SUPPORTED,REFUTED
+Diabetes can be cured completely by herbal juice alone.,false,SUPPORTED,REFUTED
+Diabetics should stop insulin once sugar becomes normal.,false,SUPPORTED,REFUTED
+Mosquito bites spread tuberculosis.,false,SUPPORTED,REFUTED
+Dengue is spread by the bite of infected Aedes mosquitoes.,true,REFUTED,SUPPORTED
+Tuberculosis spreads through the air when an infected person coughs or sneezes.,true,REFUTED,SUPPORTED
+Antibiotics do not work against viruses.,true,REFUTED,SUPPORTED
+COVID-19 is caused by a virus.,true,REFUTED,SUPPORTED

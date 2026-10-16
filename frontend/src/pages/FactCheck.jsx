@@ -12,6 +12,14 @@ import EvidencePanel from '../components/analyze/EvidencePanel';
 
 // ── Verdict Config ────────────────────────────────────────────────
 const VERDICT_CONFIG = {
+  'Supported by sources': {
+    icon: CheckCircle,
+    bg: 'bg-emerald-50/95',
+    border: 'border-emerald-300',
+    text: 'text-emerald-800',
+    badge: 'bg-emerald-100/90 border-emerald-300 text-emerald-800',
+    glow: 'shadow-card-soft shadow-emerald-500/10',
+  },
   'LIKELY TRUE': {
     icon: CheckCircle,
     bg: 'bg-emerald-50/95',
@@ -27,6 +35,14 @@ const VERDICT_CONFIG = {
     text: 'text-rose-800',
     badge: 'bg-rose-100/90 border-rose-300 text-rose-800',
     glow: 'shadow-card-soft shadow-rose-500/10',
+  },
+  'PARTIALLY VERIFIED': {
+    icon: AlertTriangle,
+    bg: 'bg-amber-50/95',
+    border: 'border-amber-300',
+    text: 'text-amber-800',
+    badge: 'bg-amber-100/90 border-amber-300 text-amber-800',
+    glow: 'shadow-card-soft shadow-amber-500/10',
   },
   'MIXED / PARTIAL': {
     icon: AlertTriangle,
@@ -47,10 +63,13 @@ const VERDICT_CONFIG = {
 };
 
 // ── Confidence Ring ───────────────────────────────────────────────
-const ConfidenceRing = ({ confidence, color }) => {
+const ConfidenceRing = ({ confidence, color, verdict }) => {
+  const isEvaluated = verdict === 'Supported by sources' || verdict === 'LIKELY TRUE' || verdict === 'LIKELY FALSE' || verdict === 'SUPPORTED' || verdict === 'REFUTED';
+  const showScore = isEvaluated && confidence > 0;
+
   const radius = 38;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (confidence / 100) * circumference;
+  const offset = circumference - (showScore ? (confidence / 100) : 0) * circumference;
   const colorMap = {
     green: '#059669', red: '#E11D48', amber: '#D97706', cyan: '#0891B2',
   };
@@ -60,18 +79,24 @@ const ConfidenceRing = ({ confidence, color }) => {
     <div className="relative w-24 h-24 flex items-center justify-center flex-shrink-0">
       <svg className="absolute inset-0 -rotate-90" viewBox="0 0 100 100">
         <circle cx="50" cy="50" r={radius} fill="none" stroke="#FBCFE8" strokeWidth="6" />
-        <circle
-          cx="50" cy="50" r={radius} fill="none"
-          stroke={stroke} strokeWidth="6"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          className="transition-all duration-1000"
-        />
+        {showScore && (
+          <circle
+            cx="50" cy="50" r={radius} fill="none"
+            stroke={stroke} strokeWidth="6"
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+            strokeLinecap="round"
+            className="transition-all duration-1000"
+          />
+        )}
       </svg>
       <div className="text-center">
-        <p className="text-2xl font-black font-mono" style={{ color: stroke }}>{confidence}%</p>
-        <p className="text-[9px] text-slate-600 font-mono font-bold uppercase tracking-wider">Match</p>
+        <p className="text-2xl font-black font-mono" style={{ color: showScore ? stroke : '#64748B' }}>
+          {showScore ? `${confidence}%` : '-'}
+        </p>
+        <p className="text-[8px] text-slate-600 font-mono font-bold uppercase tracking-wider">
+          {showScore ? 'Evidence' : 'Evidence'}
+        </p>
       </div>
     </div>
   );
@@ -104,7 +129,7 @@ const ResultCard = ({ result }) => {
             </p>
           </div>
         </div>
-        <ConfidenceRing confidence={result.confidence} color={result.verdict_color} />
+        <ConfidenceRing confidence={result.confidence} color={result.verdict_color} verdict={result.verdict} />
       </div>
 
       {/* Explanation */}

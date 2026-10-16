@@ -51,13 +51,20 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-pink-200 flex flex-col sm:flex-row justify-between items-center gap-4 text-left">
-          <p className="text-[11.5px] font-mono text-slate-600 font-medium">
-            &copy; {new Date().getFullYear()} TrustMe AI — Healthcare Misinformation Defense Intelligence
-          </p>
-          <p className="text-[11.5px] font-mono text-slate-600 flex items-center gap-1.5 font-medium">
-            Engineered with <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500 animate-pulse" /> for global clinical health truth
-          </p>
+        <div className="mt-8 pt-6 border-t border-pink-200 flex flex-col gap-3">
+          {/* P0.4: Permanent disclaimer on every page footer */}
+          <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-mono text-amber-800 leading-relaxed text-center">
+            ⚠️ <strong>Educational prototype.</strong> Compares claims with official guideline text.
+            Not medical advice — consult a qualified doctor. Results depend on corpus coverage and may be incorrect.
+          </div>
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
+            <p className="text-[11.5px] font-mono text-slate-600 font-medium">
+              &copy; {new Date().getFullYear()} TrustMe AI — Healthcare Misinformation Defense Intelligence
+            </p>
+            <p className="text-[11.5px] font-mono text-slate-600 flex items-center gap-1.5 font-medium">
+              Engineered with <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500 animate-pulse" /> for global clinical health truth
+            </p>
+          </div>
         </div>
       </div>
     </footer>

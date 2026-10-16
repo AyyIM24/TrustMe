@@ -21,31 +21,43 @@ def _determine_verdict_and_probabilities(verification: VerificationResult, ml_re
     """
     Map verification pipeline verdict to the primary prediction enum, confidence, and probabilities.
     Backward-compatible with existing prediction field ('fake' | 'real' | 'uncertain').
+
+    IMPORTANT: No clamping — all numbers must come from real model outputs.
+    UNVERIFIED and OUT_OF_SCOPE return confidence=0.0 so the UI can show '—' instead of a
+    fabricated percentage ring.
     """
     v = verification.verdict
 
     if v == "MISLEADING":
         pred = "fake"
-        conf = round(verification.confidence * 100, 1) if verification.confidence <= 1.0 else round(verification.confidence, 1)
-        conf = max(60.0, min(conf, 99.0))
+        raw = verification.confidence if verification.confidence <= 1.0 else verification.confidence / 100.0
+        conf = round(raw * 100.0, 1)
         fake_p = conf
         real_p = round(100.0 - fake_p, 1)
     elif v == "RELIABLE":
         pred = "real"
-        conf = round(verification.confidence * 100, 1) if verification.confidence <= 1.0 else round(verification.confidence, 1)
-        conf = max(60.0, min(conf, 99.0))
+        raw = verification.confidence if verification.confidence <= 1.0 else verification.confidence / 100.0
+        conf = round(raw * 100.0, 1)
         real_p = conf
         fake_p = round(100.0 - real_p, 1)
-    elif v == "UNVERIFIED":
-        pred = "uncertain"
-        conf = 50.0
-        fake_p = 50.0
-        real_p = 50.0
-    else:  # OUT_OF_SCOPE
+    elif v == "PARTIALLY_VERIFIED":
+        # Mixed claims — abstain from full real label, show no fabricated confidence
         pred = "uncertain"
         conf = 0.0
-        fake_p = round(ml_result.get("fake_probability", 50.0), 1)
-        real_p = round(ml_result.get("real_probability", 50.0), 1)
+        fake_p = 0.0
+        real_p = 0.0
+    elif v == "UNVERIFIED":
+        # No evidence found — do NOT show a confidence percentage
+        pred = "uncertain"
+        conf = 0.0
+        fake_p = 0.0
+        real_p = 0.0
+    else:  # OUT_OF_SCOPE
+        # Outside supported scope — abstain, show no confidence
+        pred = "uncertain"
+        conf = 0.0
+        fake_p = 0.0
+        real_p = 0.0
 
     return pred, conf, fake_p, real_p
 

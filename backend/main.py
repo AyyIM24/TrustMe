@@ -39,6 +39,17 @@ async def lifespan(app: FastAPI):
     from services.model_service import ModelService
     app.state.model_service = ModelService()
     print("[TrustMe AI] Deep ML models loaded successfully")
+
+    # Pre-warm retrieval & verification engines for sub-second responses
+    try:
+        from services.retrieval_service import retrieval_service
+        retrieval_service.load()
+        from services.nli_service import nli_service
+        nli_service.load()
+        print("[TrustMe AI] Retrieval and NLI verification engines warmed up [OK]")
+    except Exception as e:
+        print(f"[TrustMe AI] Verification warmup note: {e}")
+
     yield
     print("[TrustMe AI] Shutting down cleanly")
 

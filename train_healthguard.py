@@ -275,6 +275,7 @@ def train_transformer(df, epochs=2, use_biobert=False, max_samples=800):
     """Fine-tune a transformer model for health misinformation detection using PyTorch."""
     print("\n" + "=" * 60)
     print("TRANSFORMER MODEL — " + ("BioBERT" if use_biobert else "DistilBERT"))
+    
     print("=" * 60)
 
     try:

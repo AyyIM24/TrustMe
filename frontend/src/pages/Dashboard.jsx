@@ -170,7 +170,7 @@ export default function Dashboard() {
           </div>
           <div>
             <p className="text-[10px] font-mono font-bold text-cyan-700 uppercase tracking-widest">Model Transparency</p>
-            <h2 className="text-lg font-black text-slate-900">How does the Fake/Real % work?</h2>
+            <h2 className="text-lg font-black text-slate-900">How the Evidence Verification Pipeline works</h2>
           </div>
         </div>
 
@@ -179,26 +179,26 @@ export default function Dashboard() {
             {
               icon: Database,
               color: 'bg-blue-100 border-blue-300 text-blue-700',
-              title: '1. Training Dataset',
-              desc: 'Model trained on CoAID + FakeHealth dataset — 4,107 labeled healthcare articles (real vs. fake) covering COVID-19, cancer, vaccines, and more.',
+              title: '1. Corpus Sources',
+              desc: 'A corpus of 479+ passages from WHO, CDC, MedlinePlus, MoHFW, ICMR, and NVBDCP is indexed. Only official health body publications are used as evidence.',
             },
             {
               icon: FlaskConical,
               color: 'bg-purple-100 border-purple-300 text-purple-700',
-              title: '2. TF-IDF Features',
-              desc: 'Text is converted into 10,000 TF-IDF n-gram features. Words that appear frequently in fake news get high negative weights; real-news words get positive weights.',
+              title: '2. Semantic Retrieval',
+              desc: 'Claims are embedded using MiniLM sentence-transformer. Top matching passages are retrieved by cosine similarity. The threshold prevents irrelevant passages from influencing results.',
             },
             {
               icon: BookOpen,
               color: 'bg-emerald-100 border-emerald-300 text-emerald-700',
-              title: '3. Logistic Regression',
-              desc: 'A Logistic Regression classifier outputs probabilities (0–100%). The probability is the model\'s confidence that the text is REAL or FAKE based on learned patterns.',
+              title: '3. Sentence-Level NLI',
+              desc: 'DeBERTa-v3-base cross-encoder scores each (claim, evidence-sentence) pair. Max entailment and contradiction across all sentence chunks determines the stance.',
             },
             {
               icon: ShieldCheck,
               color: 'bg-amber-100 border-amber-300 text-amber-700',
-              title: '4. Authentic Fact-Check',
-              desc: 'For COVID-19, Cancer, Diabetes, Vaccines — claims are also checked against verified WHO/CDC/NIH facts, providing a second, authentic source-based layer of verification.',
+              title: '4. Verdict & Abstention',
+              desc: 'RELIABLE or MISLEADING only when NLI score ≥ 0.70 with a 0.20 margin. Insufficient evidence or out-of-scope content triggers UNVERIFIED / OUT OF SCOPE — never a forced fake/real guess.',
             },
           ].map(({ icon: Icon, color, title, desc }) => (
             <div key={title} className={`rounded-2xl border p-4 space-y-2 ${color} bg-opacity-30`}>
@@ -212,7 +212,7 @@ export default function Dashboard() {
         </div>
 
         <div className="mt-4 p-3 rounded-xl bg-white/60 border border-cyan-200 text-xs text-slate-700 leading-relaxed font-mono">
-          <span className="font-bold text-cyan-800">Why the % is meaningful:</span> The model was evaluated on a held-out test set. Accuracy, Precision, Recall, F1, and ROC-AUC scores (shown below) confirm the model's reliability. The fake/real probability is <span className="font-bold">not just word frequency</span> — it is the output of <span className="font-bold">calibrated logistic regression predict_proba()</span>, cross-validated and tested against ground-truth labels.
+          <span className="font-bold text-cyan-800">TF-IDF + Logistic Regression (secondary signal):</span> Also runs on submitted text as a writing-style signal (77.5% accuracy on CoAID + FakeHealth). This is shown in the collapsible "Secondary writing-style signal" section — it never overrides the evidence pipeline verdict.
         </div>
       </motion.div>
 

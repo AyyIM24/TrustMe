@@ -31,3 +31,7 @@ Ivermectin and hydroxychloroquine were removed from MoHFW clinical guidelines du
 
 Severe COVID-19 can cause acute respiratory distress syndrome (ARDS) requiring medical oxygen and corticosteroids.
 
+Antibiotics are medicines used to prevent and treat bacterial infections. Antibiotics do not work against viruses. Since COVID-19 is caused by a virus, not a bacterium, antibiotics are not effective against COVID-19 and should not be used to treat or prevent it. The WHO, CDC, and MoHFW all confirm that antibiotics do not work against any virus.
+
+Flu, COVID-19, dengue, and the common cold are all viral infections. Antibiotics have no effect on any of these. Inappropriate use of antibiotics contributes to antibiotic resistance and is dangerous.
+

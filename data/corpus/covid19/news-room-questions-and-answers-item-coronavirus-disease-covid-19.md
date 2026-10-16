@@ -133,13 +133,8 @@ Apart from these medications, amongst the most commonly and globally used, and i
 For corticosteroids, further specific information can be found in the Corticosteroids, including dexamethasone
 questions and answers
 Are antibiotics effective in preventing or treating COVID-19?
-Antibiotics do not work against viruses; they only work on
-bacterial infections. COVID-19 is caused by a virus, so antibiotics do not
-work. Antibiotics should not be used as a means of prevention or treatment of
-In hospitals, physicians will sometimes use antibiotics to treat
-secondary bacterial infections, which can be a complication of COVID-19 in
-severely ill patients. They should only be used as directed by a physician to
-treat a bacterial infection.
+Antibiotics do not work against viruses; they only work on bacterial infections. COVID-19 is caused by a virus, so antibiotics do not work against COVID-19. Antibiotics should not be used as a means of prevention or treatment of COVID-19.
+In hospitals, physicians will sometimes use antibiotics to treat secondary bacterial infections, which can be a complication of COVID-19 in severely ill patients. They should only be used as directed by a physician to treat a bacterial infection.
 Start the conversation
 Advice for the public
 WHO Information Network on Epidemics (EPI-WIN)

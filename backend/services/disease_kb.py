@@ -55,6 +55,8 @@ DISEASE_KB: Dict[str, dict] = {
             "covid vaccines alter dna",
             "mrna vaccines alter dna",
             "vaccines alter dna",
+            "covid-19 vaccines change human dna",
+            "vaccines change human dna",
             "gomutra cures covid",
             "cow urine cures covid",
             "coronil cures covid",
@@ -62,8 +64,15 @@ DISEASE_KB: Dict[str, dict] = {
             "covaxin alters dna",
             "covishield causes heart attack",
             "5g causes covid",
+            "5g towers spread coronavirus",
+            "5g towers spread covid",
             "bleach cures covid",
             "garlic cures covid",
+            "garlic and hot water cure covid",
+            "garlic and hot water cure covid-19",
+            "antibiotics cure covid",
+            "antibiotics can cure covid-19",
+            "antibiotics cure coronavirus",
             "steam inhalation kills coronavirus in lungs",
         ],
     },
@@ -94,12 +103,19 @@ DISEASE_KB: Dict[str, dict] = {
         "myths": [
             "tb is genetic",
             "tb is hereditary",
+            "tuberculosis is a hereditary disease",
+            "tuberculosis is genetic",
             "tuberculosis cannot be cured",
             "eating garlic cures tb",
             "tb spreads by sharing food",
+            "tuberculosis spreads by sharing food and utensils",
+            "tb spreads by sharing food and utensils",
             "tb spreads by touching",
             "herbal medicine cures tuberculosis",
             "only poor people get tb",
+            "mosquito bites spread tuberculosis",
+            "mosquitoes spread tuberculosis",
+            "mosquito bites spread tb",
         ],
     },
 
@@ -134,6 +150,11 @@ DISEASE_KB: Dict[str, dict] = {
             "dengue spreads through drinking water",
             "homeopathy belladonna prevents dengue",
             "platelet count below 50000 always requires immediate transfusion",
+            "there is a specific medicine that cures dengue within one day",
+            "specific medicine cures dengue",
+            "specific medicine that cures dengue",
+            "medicine cures dengue within one day",
+            "cure dengue within one day",
         ],
     },
 
@@ -165,7 +186,12 @@ DISEASE_KB: Dict[str, dict] = {
             "bitter gourd juice cures diabetes",
             "jamun powder eliminates diabetes",
             "herbal medicine cures type 1 diabetes",
+            "diabetes can be cured completely by herbal juice alone",
+            "herbal juice alone cures diabetes",
+            "herbal juice cures diabetes",
             "diabetics should stop insulin",
+            "diabetics should stop insulin once sugar becomes normal",
+            "stop insulin once sugar becomes normal",
             "eating sugar directly causes diabetes",
             "diabetics cannot eat fruit",
             "cinnamon permanently cures diabetes",
@@ -354,3 +380,107 @@ def get_all_diseases() -> List[dict]:
         }
         for d_id, d_data in DISEASE_KB.items()
     ]
+
+
+# ── Curated Myth Veto Engine ──────────────────────────────────────────
+
+_MYTH_STOPWORDS = {
+    "a", "an", "the", "is", "are", "was", "were", "by", "in", "of", "and",
+    "or", "that", "with", "to", "for", "from", "can", "should", "be", "there",
+    "has", "have", "had", "do", "does", "did", "it", "its", "at", "as", "about"
+}
+
+_SYNONYMS = {
+    "tb": "tuberculosis",
+    "covid": "coronavirus",
+    "covid-19": "coronavirus",
+    "covid19": "coronavirus",
+    "corona": "coronavirus",
+}
+
+
+def _normalize_tokens(text: str) -> set:
+    try:
+        from nltk.stem import PorterStemmer
+        stemmer = PorterStemmer()
+        stem_fn = stemmer.stem
+    except Exception:
+        stem_fn = lambda w: w
+
+    raw = re.findall(r"\b[a-zA-Z0-9'-]+\b", text.lower())
+    result = set()
+    for w in raw:
+        canon = _SYNONYMS.get(w, w)
+        if canon not in _MYTH_STOPWORDS and len(canon) >= 2:
+            result.add(stem_fn(canon))
+    return result
+
+
+def check_known_myth_veto(claim_text: str, disease_hint: Optional[str] = None) -> Optional[dict]:
+    """
+    Known-myth veto: if the claim matches the curated myth list in disease_kb,
+    it can NEVER be SUPPORTED.
+
+    Returns:
+        dict: {"myth": matched_myth_str, "badge": "Known myth (curated)"} or None
+    """
+    if not claim_text:
+        return None
+
+    claim_stems = _normalize_tokens(claim_text)
+    claim_lower = claim_text.lower()
+
+    # Scope to hint disease if valid
+    if disease_hint and disease_hint in DISEASE_KB:
+        diseases_to_check = [disease_hint]
+    else:
+        diseases_to_check = list(DISEASE_KB.keys())
+
+    disease_keywords = {
+        "tuberculosis": ["tb", "tuberculosis"],
+        "covid19": ["covid", "coronavirus", "corona", "sars-cov-2", "vaccine", "5g"],
+        "dengue": ["dengue", "aedes", "platelet"],
+        "diabetes": ["diabetes", "diabetic", "insulin", "blood sugar", "sugar"],
+        "cancer": ["cancer", "tumor", "tumour"],
+    }
+
+    for d in diseases_to_check:
+        # If checking cross-disease without hint, ensure at least one keyword for that disease is present
+        d_kws = disease_keywords.get(d, [d])
+        if not any(kw in claim_lower for kw in d_kws):
+            continue
+
+        myths = DISEASE_KB[d].get("myths", [])
+        for myth in myths:
+            myth_lower = myth.lower()
+            # 1. Direct substring check
+            if myth_lower in claim_lower:
+                return {
+                    "myth": myth,
+                    "badge": "Known myth (curated)",
+                    "disease": d
+                }
+
+            # 2. Token overlap check
+            myth_stems = _normalize_tokens(myth)
+            if not myth_stems:
+                continue
+
+            # Ensure disease-specific words in myth are also in claim
+            if any(w in myth_lower for w in ["tuberculosis", "tb"]) and not any(w in claim_lower for w in ["tuberculosis", "tb"]):
+                continue
+            if any(w in myth_lower for w in ["dengue"]) and "dengue" not in claim_lower:
+                continue
+            if any(w in myth_lower for w in ["covid", "coronavirus", "corona"]) and not any(w in claim_lower for w in ["covid", "coronavirus", "corona"]):
+                continue
+
+            overlap = len(myth_stems.intersection(claim_stems))
+            if overlap == len(myth_stems) or (len(myth_stems) >= 3 and overlap / len(myth_stems) >= 0.75):
+                return {
+                    "myth": myth,
+                    "badge": "Known myth (curated)",
+                    "disease": d
+                }
+
+    return None
+

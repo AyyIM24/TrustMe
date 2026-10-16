@@ -48,6 +48,8 @@ class Evidence(BaseModel):
     url: str
     similarity: float
     disease: Optional[str] = None
+    source_type: Optional[str] = "official_page"  # "official_page" | "curated_summary"
+    best_sentence: Optional[str] = None
 
 
 class NLIScores(BaseModel):
@@ -62,10 +64,11 @@ class ClaimResult(BaseModel):
     confidence: float
     evidence: Optional[List[Evidence]] = []
     nli_scores: Optional[NLIScores] = None
+    badge: Optional[str] = None  # e.g. "Known myth (curated)"
 
 
 class VerificationResult(BaseModel):
-    verdict: str  # "RELIABLE" | "MISLEADING" | "UNVERIFIED" | "OUT_OF_SCOPE"
+    verdict: str  # "RELIABLE" | "PARTIALLY_VERIFIED" | "MISLEADING" | "UNVERIFIED" | "OUT_OF_SCOPE"
     confidence: float
     disease: Optional[str] = None
     claims: List[ClaimResult] = []

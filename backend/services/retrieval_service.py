@@ -1,4 +1,4 @@
-﻿"""
+"""
 retrieval_service.py — TrustMe AI v2 Semantic Passage Retrieval
 
 Loads the pre-built passage index (data/index/) and provides cosine-similarity
@@ -85,10 +85,14 @@ class RetrievalService:
             with open(INDEX_META_FILE, "r") as f:
                 self._meta = json.load(f)
 
-        # Load sentence-transformers model
+        # Load sentence-transformers model (prefer local cache for sub-second startup)
+        os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
         logger.info("[Retrieval] Loading embed model: %s", EMBED_MODEL)
         from sentence_transformers import SentenceTransformer
-        self._model = SentenceTransformer(EMBED_MODEL)
+        try:
+            self._model = SentenceTransformer(EMBED_MODEL, local_files_only=True)
+        except Exception:
+            self._model = SentenceTransformer(EMBED_MODEL)
 
         self._ready = True
         logger.info(

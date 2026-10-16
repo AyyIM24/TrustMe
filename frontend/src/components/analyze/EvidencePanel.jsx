@@ -3,8 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShieldCheck, ShieldAlert, HelpCircle, Compass,
   ExternalLink, ChevronDown, ChevronUp, FileText,
-  Layers, Check, X, AlertCircle, Sparkles, BookOpen
+  Layers, Check, X, AlertCircle, Sparkles, BookOpen,
+  Flag, MessageSquare, Send
 } from 'lucide-react';
+import { feedbackAPI } from '../../api/client';
+import toast from 'react-hot-toast';
 
 const VERDICT_STYLES = {
   RELIABLE: {
@@ -13,8 +16,19 @@ const VERDICT_STYLES = {
     text: 'text-emerald-400',
     badgeBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
     icon: ShieldCheck,
-    title: 'CLINICALLY VERIFIED — RELIABLE',
+    title: 'Consistent with guidelines',
     subtitle: 'All extracted health assertions are directly supported by official WHO, CDC, or MoHFW medical guidelines.',
+    showConfidence: true,
+  },
+  PARTIALLY_VERIFIED: {
+    border: 'border-amber-500/50',
+    bg: 'bg-amber-500/10',
+    text: 'text-amber-400',
+    badgeBg: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+    icon: HelpCircle,
+    title: 'PARTIALLY VERIFIED',
+    subtitle: 'Some claims could not be verified against authoritative medical guidelines.',
+    showConfidence: false,
   },
   MISLEADING: {
     border: 'border-rose-500/50',
@@ -24,6 +38,7 @@ const VERDICT_STYLES = {
     icon: ShieldAlert,
     title: 'POTENTIALLY MISLEADING — REFUTED',
     subtitle: 'Contains medical assertions contradicted by authentic clinical evidence from official health bodies.',
+    showConfidence: true,
   },
   UNVERIFIED: {
     border: 'border-amber-500/50',
@@ -33,6 +48,7 @@ const VERDICT_STYLES = {
     icon: HelpCircle,
     title: 'INCONCLUSIVE — UNVERIFIED',
     subtitle: 'Authoritative medical guidelines provide insufficient matching evidence in our corpus to confirm or refute these claims.',
+    showConfidence: false,  // P0.2: Never show % for uncertain
   },
   OUT_OF_SCOPE: {
     border: 'border-indigo-500/50',
@@ -42,6 +58,7 @@ const VERDICT_STYLES = {
     icon: Compass,
     title: 'OUT OF CLINICAL SCOPE',
     subtitle: 'This article falls outside the current supported diseases (COVID-19, Tuberculosis, Dengue, and Diabetes). TrustMe AI v2 does not guess without verified evidence.',
+    showConfidence: false,  // P0.2: Never show % for abstentions
   },
 };
 
@@ -70,7 +87,97 @@ const DISEASE_LABELS = {
   diabetes: 'Diabetes Care (ICMR-INDIAB Guidelines)',
 };
 
-const EvidencePanel = ({ verification }) => {
+// ── Report Incorrect Result Widget ────────────────────────────────────────────
+function ReportResultWidget({ analysisId, claim, verdict }) {
+  const [open, setOpen] = useState(false);
+  const [comment, setComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!comment.trim()) return;
+    setSubmitting(true);
+    try {
+      if (analysisId) {
+        await feedbackAPI.submit(analysisId, { is_correct: false, comment });
+      }
+      setSubmitted(true);
+      toast.success('Feedback submitted — thank you!');
+    } catch {
+      // If no analysis ID (scanner page) or auth not available, save locally
+      const reports = JSON.parse(localStorage.getItem('trustme_reports') || '[]');
+      reports.push({ verdict, claim: claim?.slice(0, 200), comment, timestamp: new Date().toISOString() });
+      localStorage.setItem('trustme_reports', JSON.stringify(reports));
+      setSubmitted(true);
+      toast.success('Report saved — thank you!');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-xs font-mono text-emerald-300 text-center">
+        ✓ Report received. Thank you for helping improve TrustMe AI.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1.5 text-xs font-mono text-slate-400 hover:text-rose-400 transition-colors"
+      >
+        <Flag className="w-3.5 h-3.5" />
+        Report incorrect result
+        {open ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="p-3 rounded-lg bg-black/40 border border-white/10 space-y-2">
+              <div className="flex items-center gap-1.5 text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+                <MessageSquare className="w-3 h-3" />
+                Why is this result incorrect?
+              </div>
+              <textarea
+                value={comment}
+                onChange={e => setComment(e.target.value)}
+                placeholder="Describe the issue (e.g., wrong verdict, missing evidence, incorrect claim extraction...)"
+                rows={3}
+                className="w-full text-xs bg-black/40 border border-white/10 rounded-lg p-2 text-slate-300 placeholder-slate-600 resize-none focus:outline-none focus:border-rose-500/50"
+              />
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => setOpen(false)}
+                  className="text-xs font-mono text-slate-500 hover:text-slate-300 px-2 py-1"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={!comment.trim() || submitting}
+                  className="flex items-center gap-1.5 text-xs font-mono px-3 py-1.5 bg-rose-500/20 border border-rose-500/40 text-rose-300 rounded-lg hover:bg-rose-500/30 disabled:opacity-50 transition-colors"
+                >
+                  <Send className="w-3 h-3" />
+                  {submitting ? 'Sending...' : 'Submit Report'}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+const EvidencePanel = ({ verification, analysisId }) => {
   const [showHowItWorks, setShowHowItWorks] = useState(false);
 
   if (!verification) return null;
@@ -79,6 +186,12 @@ const EvidencePanel = ({ verification }) => {
   const style = VERDICT_STYLES[verdictKey] || VERDICT_STYLES.UNVERIFIED;
   const VerdictIcon = style.icon;
   const diseaseName = verification.disease ? DISEASE_LABELS[verification.disease] || verification.disease.toUpperCase() : null;
+  const confPct = verification.confidence <= 1.0
+    ? Math.round(verification.confidence * 100)
+    : Math.round(verification.confidence);
+
+  // P0.4: derive a representative claim for the report widget
+  const topClaim = verification.claims?.[0]?.claim || '';
 
   return (
     <motion.div
@@ -113,14 +226,20 @@ const EvidencePanel = ({ verification }) => {
           </div>
         </div>
 
-        {/* Confidence metric */}
-        {verdictKey !== 'OUT_OF_SCOPE' && (
+        {/* P0.2: Only show confidence % for RELIABLE and MISLEADING verdicts */}
+        {style.showConfidence && confPct > 0 && (
           <div className="sm:text-right flex-shrink-0">
             <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">
-              Evidence Confidence
+              Evidence Strength
             </span>
-            <span className={`text-2xl font-mono font-black ${style.text}`}>
-              {Math.round((verification.confidence > 1 ? verification.confidence : verification.confidence * 100))}%
+            <span
+              className={`text-2xl font-mono font-black ${style.text}`}
+              title="NLI model probability score — not the probability that this claim is true"
+            >
+              {confPct}%
+            </span>
+            <span className="block text-[9px] font-mono text-slate-500">
+              NLI model score ⓘ
             </span>
           </div>
         )}
@@ -161,6 +280,8 @@ const EvidencePanel = ({ verification }) => {
             {verification.claims.map((claimItem, idx) => {
               const stanceStyle = STANCE_BADGES[claimItem.stance] || STANCE_BADGES.NOT_ENOUGH_EVIDENCE;
               const StanceIcon = stanceStyle.icon;
+              // P0.2: Only show score for SUPPORTED/REFUTED, not for NOT_ENOUGH_EVIDENCE
+              const showScore = claimItem.stance === 'SUPPORTED' || claimItem.stance === 'REFUTED';
 
               return (
                 <div
@@ -177,6 +298,11 @@ const EvidencePanel = ({ verification }) => {
                     </div>
 
                     <div className="flex items-center gap-2 flex-shrink-0">
+                      {claimItem.badge && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                          {claimItem.badge}
+                        </span>
+                      )}
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-bold border ${stanceStyle.bg}`}>
                         <StanceIcon className="w-3.5 h-3.5" />
                         {stanceStyle.label}
@@ -185,10 +311,12 @@ const EvidencePanel = ({ verification }) => {
                   </div>
 
                   {/* NLI Probability Distribution Bars */}
-                  {claimItem.nli_scores && (
+                  {claimItem.nli_scores && showScore && (
                     <div className="pt-2 border-t border-white/5 space-y-1.5">
                       <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
-                        <span>Zero-Shot Stance Probability (DeBERTa-v3):</span>
+                        <span>
+                          Evidence Strength (DeBERTa-v3 NLI score — not probability claim is true):
+                        </span>
                         <div className="flex gap-3">
                           <span className="text-emerald-400 font-semibold">
                             Support: {Math.round(claimItem.nli_scores.entailment * 100)}%
@@ -241,7 +369,7 @@ const EvidencePanel = ({ verification }) => {
                           <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-white/5 text-[11px]">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-bold text-cyan-300">{ev.source_name}</span>
-                              {/* Source type badge */}
+                              {/* P0.5: Source type badge */}
                               {ev.source_type === 'curated_summary' ? (
                                 <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/20 border border-amber-500/30 text-amber-300 uppercase tracking-wider">
                                   Curated summary
@@ -257,7 +385,8 @@ const EvidencePanel = ({ verification }) => {
                               </span>
                             </div>
 
-                            {ev.url && (
+                            {/* P0.5: Only show link for official_page, never for curated_summary */}
+                            {ev.url && ev.source_type !== 'curated_summary' && (
                               <a
                                 href={ev.url}
                                 target="_blank"
@@ -317,33 +446,47 @@ const EvidencePanel = ({ verification }) => {
               <div className="flex items-start gap-3">
                 <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold">2</span>
                 <div>
-                  <strong className="text-slate-100">Claim Extraction:</strong> Sentence-boundary parsing extracts declarative assertions containing medical and disease predicates (capped at 8 per document).
+                  <strong className="text-slate-100">Claim Extraction:</strong> Sentence-boundary parsing extracts declarative medical assertions containing health-cue verbs and disease predicates. News-reporting sentences (case counts, official announcements) are excluded.
                 </div>
               </div>
 
               <div className="flex items-start gap-3">
                 <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold">3</span>
                 <div>
-                  <strong className="text-slate-100">Semantic Passage Retrieval:</strong> Passages are embedded using <code className="text-cyan-300">all-MiniLM-L6-v2</code> and matched against 480+ indexed passages from WHO, CDC, MoHFW, and ICMR.
+                  <strong className="text-slate-100">Semantic Passage Retrieval:</strong> Passages are embedded using <code className="text-cyan-300">all-MiniLM-L6-v2</code> and matched against 479+ indexed passages from WHO, CDC, MoHFW, and ICMR.
                 </div>
               </div>
 
               <div className="flex items-start gap-3">
                 <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold">4</span>
                 <div>
-                  <strong className="text-slate-100">Zero-Shot Stance Inference:</strong> Pairs are evaluated via <code className="text-cyan-300">DeBERTa-v3-base</code> cross-encoder to assess entailment vs contradiction without hardcoded templates.
+                  <strong className="text-slate-100">Sentence-Level Stance Inference:</strong> Each passage is split into sentences. <code className="text-cyan-300">DeBERTa-v3-base</code> cross-encoder scores each (claim, sentence) pair. Max entailment and contradiction are taken across all sentence chunks.
                 </div>
               </div>
 
               <div className="flex items-start gap-3">
                 <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold">5</span>
                 <div>
-                  <strong className="text-slate-100">Multi-Claim Aggregation:</strong> An article is flagged <span className="text-rose-400 font-bold">MISLEADING</span> if any verifiable assertion is refuted, and <span className="text-emerald-400 font-bold">RELIABLE</span> if claims are corroborated by guidelines.
+                  <strong className="text-slate-100">Multi-Claim Aggregation:</strong> An article is flagged <span className="text-rose-400 font-bold">MISLEADING</span> if any verifiable assertion is refuted, and <span className="text-emerald-400 font-bold">RELIABLE</span> if claims are corroborated. <span className="text-amber-400 font-bold">UNVERIFIED</span> means insufficient corpus evidence — not necessarily false.
                 </div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
+
+      {/* ── Permanent Disclaimer + Report Widget (P0.4) ────────────────── */}
+      <div className="rounded-xl border border-slate-600/40 bg-black/30 p-4 space-y-3">
+        <p className="text-[10px] font-mono text-slate-400 leading-relaxed">
+          ⚠️ <strong className="text-slate-300">Educational prototype.</strong> Compares claims with
+          official guideline text. Not medical advice — consult a qualified doctor.
+          Results depend on corpus coverage and NLI model accuracy; they may be incorrect.
+        </p>
+        <ReportResultWidget
+          analysisId={analysisId}
+          claim={topClaim}
+          verdict={verdictKey}
+        />
       </div>
     </motion.div>
   );

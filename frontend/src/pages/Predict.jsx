@@ -70,6 +70,7 @@ export default function Predict() {
   const verdict = result?.verification?.verdict || (result?.prediction === 'fake' ? 'MISLEADING' : result?.prediction === 'real' ? 'RELIABLE' : 'UNVERIFIED');
   const isMisleading = verdict === 'MISLEADING';
   const isReliable = verdict === 'RELIABLE';
+  const isPartiallyVerified = verdict === 'PARTIALLY_VERIFIED';
   const isOutOfScope = verdict === 'OUT_OF_SCOPE';
   const isUnverified = verdict === 'UNVERIFIED';
 
@@ -226,7 +227,8 @@ export default function Predict() {
                   <div>
                     <h2 className="text-2xl font-bold text-slate-900">
                       {isMisleading && 'Potentially Misleading / Refuted'}
-                      {isReliable && 'Clinically Verified — Reliable'}
+                      {isReliable && 'Consistent with guidelines'}
+                      {isPartiallyVerified && 'Partially Verified — Inconclusive'}
                       {isOutOfScope && 'Out of Scope — Abstention'}
                       {isUnverified && 'Inconclusive / Unverified'}
                     </h2>

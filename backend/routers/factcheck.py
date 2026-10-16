@@ -155,14 +155,19 @@ async def fact_check(payload: FactCheckRequest):
             final_confidence = int(v_result.confidence * 100) if v_result.confidence <= 1.0 else int(v_result.confidence)
             explanation = f"[Authentic Medical Evidence] {v_result.summary}"
         elif v_result.verdict == "RELIABLE":
-            final_verdict = "LIKELY TRUE"
+            final_verdict = "Supported by sources"
             final_color = "green"
             final_confidence = int(v_result.confidence * 100) if v_result.confidence <= 1.0 else int(v_result.confidence)
             explanation = f"[Authentic Medical Evidence] {v_result.summary}"
+        elif v_result.verdict == "PARTIALLY_VERIFIED":
+            final_verdict = "PARTIALLY VERIFIED"
+            final_color = "amber"
+            final_confidence = 0
+            explanation = f"[Authentic Medical Evidence] {v_result.summary}"
         else:
             final_verdict = "UNVERIFIABLE"
-            final_color = "amber"
-            final_confidence = 50
+            final_color = "cyan"
+            final_confidence = 0
             explanation = f"[Authentic Medical Evidence] {v_result.summary}"
 
         # If there are myth signals from knowledge base, append explanation

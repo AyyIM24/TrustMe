@@ -52,3 +52,5 @@ Thumbs.db
 *.sln
 *.sw?
 .gemini/
+~$*
+backend/scratch/
